@@ -92,4 +92,5 @@ local.properties
 
 .vscode
 .idea
-cmake-build-debug/
+cmake-build-debug
+build
