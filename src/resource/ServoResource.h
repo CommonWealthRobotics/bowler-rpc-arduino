@@ -39,6 +39,7 @@ class ServoResource : public Resource {
   }
 
   virtual ~ServoResource() {
+    Serial.printf("Servo detach pin %d\n", pin);
     servo.detach();
   }
 
