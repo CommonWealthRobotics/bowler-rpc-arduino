@@ -19,16 +19,14 @@
 #include <Esp32SimplePacketComs.h>
 #include <Preferences.h>
 #include <SimplePacketComs.h>
-#include <WiFi.h>
 #include <server/NameCheckerServer.h>
-#include <wifi/WifiManager.h>
 
 #include "config.h"
 #include "src/RobotControlCenter.h"
 
 RobotControlCenter *controlCenter;
 void setup() {
-  controlCenter = new RobotControlCenter(new String(TEAM_NAME));
+  controlCenter = new RobotControlCenter();
 }
 
 void loop() {

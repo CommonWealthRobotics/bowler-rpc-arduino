@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef SRC_ROBOTCONTROLCENTER_H_
-#define SRC_ROBOTCONTROLCENTER_H_
+#pragma once
 
 #if defined(Arduino_h)
 #include <Arduino.h>
@@ -25,11 +24,9 @@
 #include <ESP32Encoder.h>
 #include <ESP32Servo.h>
 #include <Esp32SimplePacketComs.h>
+#include <Esp32WifiManager.h>
 #include <Preferences.h>
 #include <SimplePacketComs.h>
-#include <WiFi.h>
-#include <server/NameCheckerServer.h>
-#include <wifi/WifiManager.h>
 
 enum state_t {
   Startup,
@@ -51,61 +48,51 @@ enum state_t {
  *
  */
 class RobotControlCenter {
-  private:
-  int64_t lastPrint = 0;
-
-  // Change this to set your team name
-  String *name;
-
-#if defined(USE_WIFI)
-  // SImple packet coms implementation useing WiFi
-  UDPSimplePacket coms;
-  // WIfi stack managment state machine
-  WifiManager manager;
-#endif
-
-  // attach the PID servers
-  void setupPIDServers();
-  // State machine state
-  state_t state = Startup;
-
   public:
   /**
-   * RobotControlCenter constructor
+   * RobotControlCenter constructor.
    *
    * The name is used by the SimplePacketComs stack to locate your specific
    * robot on the network.
    */
-  RobotControlCenter(String *name);
-  ~RobotControlCenter() {
+  RobotControlCenter();
+
+  virtual ~RobotControlCenter() {
   }
 
   /**
-   * Pulse the loop function from the main thread
+   * Pulse the loop function from the main thread.
    *
-   * This function is called over and over by the INO loop()
+   * This function is called over and over by the INO loop().
    */
   void loop();
 
   protected:
   /**
-   * Internal setup function to set up all objects
+   * Internal setup function to set up all objects.
    *
-   * This function is called as part of the state machine by the object
+   * This function is called as part of the state machine by the object.
    */
   void setup();
 
   /**
    * 	The fast loop actions
    *
-   * 	This should be run every loop and is internally gated for fast opperation
-   *
-   * 	@see StudentsRobot::Approve
-   * 	@see StudentsRobot::ClearFaults
-   * 	@see StudentsRobot::EStop
-   * 	@see StudentsRobot::PickOrder
+   * 	This should be run every loop and is internally gated for fast opperation.
    */
   void fastLoop();
-};
 
-#endif /* SRC_ROBOTCONTROLCENTER_H_ */
+  private:
+  int64_t lastPrint = 0;
+
+#if defined(USE_WIFI)
+  // SimplePacketComs implementation using WiFi
+  UDPSimplePacket coms;
+
+  // Wifi stack managment state machine
+  WifiManager manager;
+#endif
+
+  // State machine state
+  state_t state = Startup;
+};
