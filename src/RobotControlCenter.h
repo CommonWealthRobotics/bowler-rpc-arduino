@@ -36,25 +36,10 @@ enum state_t {
 };
 
 /**
- * RobotControlCenter is the main class for the 2000 level student code
- *
- * This class is the starting point for all the code. Student code is
- * housed in StudentsRobot class
- * @see StudentsRobot
- *
- * This class managed the overall state machine for dealing with connecting and
- * maintaining connection to the WiFi, constructing the StudentsRobot class, and managing
- * the StudentsRobot calls to updates its state machine as well as its PID loops.
- *
+ * This class manages the overall state machine for maintaining a connection to WiFi.
  */
 class RobotControlCenter {
   public:
-  /**
-   * RobotControlCenter constructor.
-   *
-   * The name is used by the SimplePacketComs stack to locate your specific
-   * robot on the network.
-   */
   RobotControlCenter();
 
   virtual ~RobotControlCenter() {
@@ -83,7 +68,7 @@ class RobotControlCenter {
   void fastLoop();
 
   private:
-  int64_t lastPrint = 0;
+  int64_t lastLoopTime = 0;
 
 #if defined(USE_WIFI)
   // SimplePacketComs implementation using WiFi

@@ -120,6 +120,10 @@ class DiscoveryPacket : public PacketEventAbstract {
                const std::uint8_t *attachmentData);
 
   SimplePacketComsAbstract *coms;
-  std::map<std::uint8_t, ResourceServer *> resourceServers{};
+
+  // All the attached resource servers
+  std::vector<ResourceServer *> resourceServers{};
+
+  // Keys are group id's (not packet id's), values are attached group resource servers
   std::map<std::uint8_t, GroupResourceServer *> groupServers{};
 };

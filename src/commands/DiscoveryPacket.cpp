@@ -29,7 +29,6 @@
 void DiscoveryPacket::event(float *buffer) {
   std::uint8_t *buf = (std::uint8_t *)buffer;
 
-  Serial.println("Got DiscoveryPacket event:");
   // Print the bytes we got
   for (int i = 0; i < 60; i++) {
     Serial.print(buf[i]);
@@ -84,6 +83,7 @@ void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std:
   std::uint8_t count = buffer[3];
 
   groupServers.emplace(groupId, new GroupResourceServer(packetId));
+
   coms->attach(groupServers.at(groupId));
 
   dest[0] = STATUS_ACCEPTED;
@@ -119,14 +119,12 @@ void DiscoveryPacket::parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer
 
 void DiscoveryPacket::parseDiscardDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
   for (auto const &elem : resourceServers) {
-    coms->detach(elem.first);
-    delete elem.second;
+    delete coms->detach(elem->getId());
   }
   resourceServers.clear();
 
   for (auto const &elem : groupServers) {
-    coms->detach(elem.first);
-    delete elem.second;
+    delete coms->detach(elem.second->getId());
   }
   groupServers.clear();
 
@@ -143,8 +141,9 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
   std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
 
   if (resource) {
-    resourceServers.emplace(packetId, new ResourceServer(packetId, std::move(resource)));
-    coms->attach(resourceServers.at(packetId));
+    auto server = new ResourceServer(packetId, std::move(resource));
+    resourceServers.push_back(server);
+    coms->attach(server);
   }
 
   dest[0] = status;

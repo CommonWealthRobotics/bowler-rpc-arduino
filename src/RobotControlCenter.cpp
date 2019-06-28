@@ -17,8 +17,8 @@
 #include "RobotControlCenter.h"
 
 void RobotControlCenter::loop() {
-  if (esp_timer_get_time() - lastPrint > 500 ||
-      esp_timer_get_time() < lastPrint // check for the wrap over case
+  if (esp_timer_get_time() - lastLoopTime > 500 ||
+      esp_timer_get_time() < lastLoopTime // check for the wrap over case
   ) {
     switch (state) {
     case Startup:
@@ -37,7 +37,8 @@ void RobotControlCenter::loop() {
       break;
     }
 
-    lastPrint = esp_timer_get_time(); // ensure 0.5 ms spacing *between* reads for Wifi to transact
+    // ensure 0.5 ms spacing *between* reads for Wifi to transact
+    lastLoopTime = esp_timer_get_time();
   }
 
   if (state != Startup) {
