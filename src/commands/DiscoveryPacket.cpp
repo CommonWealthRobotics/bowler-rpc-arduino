@@ -181,7 +181,8 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
 
   case RESOURCE_TYPE_SERVO: {
     switch (attachment) {
-    case ATTACHMENT_POINT_TYPE_PIN: {
+    case ATTACHMENT_POINT_TYPE_PIN:
+    case ATTACHMENT_POINT_TYPE_PWM_PIN: {
       return std::make_tuple(
         std::unique_ptr<ServoResource>(new ServoResource(resourceType, attachment, attachmentData)),
         STATUS_ACCEPTED);
