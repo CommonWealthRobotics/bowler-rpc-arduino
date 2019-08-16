@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef RESOURCESERVER_H
+#define RESOURCESERVER_H
 
 #include "../resource/Resource.h"
 #include <SimplePacketComs.h>
@@ -40,3 +41,5 @@ class ResourceServer : public PacketEventAbstract {
   protected:
   std::unique_ptr<Resource> resource;
 };
+
+#endif

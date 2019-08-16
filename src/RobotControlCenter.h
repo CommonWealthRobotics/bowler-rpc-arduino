@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef ROBOTCONTROLCENTER_H
+#define ROBOTCONTROLCENTER_H
 
 #if defined(PLATFORM_ESP32)
 #include <ESP32Encoder.h>
@@ -76,11 +77,11 @@ class RobotControlCenter {
   void fastLoop();
 
   private:
-  #if defined(PLATFORM_ESP32)
+#if defined(PLATFORM_ESP32)
   int64_t lastLoopTime = 0;
-  #elif defined(PLATFORM_TEENSY)
+#elif defined(PLATFORM_TEENSY)
   uint32_t lastLoopTime = 0;
-  #endif
+#endif
 
 #if defined(USE_WIFI)
   // SimplePacketComs implementation using WiFi
@@ -95,3 +96,5 @@ class RobotControlCenter {
   // State machine state
   state_t state = Startup;
 };
+
+#endif

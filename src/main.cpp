@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include "RobotControlCenter.h"
 
 RobotControlCenter *controlCenter;

@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef RESOURCE_H
+#define RESOURCE_H
 
 #include "../commands/DiscoveryMetadata.h"
 #include <array>
@@ -92,3 +93,5 @@ class Resource {
   std::uint8_t sendLength{60};
   std::uint8_t receiveLength{60};
 };
+
+#endif

@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef DISCOVERYPACKET_H
+#define DISCOVERYPACKET_H
 
 #include "../resource/Resource.h"
 #include "DiscoveryMetadata.h"
@@ -127,3 +128,5 @@ class DiscoveryPacket : public PacketEventAbstract {
   // Keys are group id's (not packet id's), values are attached group resource servers
   std::map<std::uint8_t, GroupResourceServer *> groupServers{};
 };
+
+#endif

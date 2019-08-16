@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef ESP32SERVORESOURCE_H
+#define ESP32SERVORESOURCE_H
 
 #if defined(PLATFORM_ESP32)
 #include "../commands/DiscoveryMetadata.h"
@@ -56,4 +57,5 @@ class ServoResource : public Resource {
   Servo servo;
 };
 
+#endif
 #endif

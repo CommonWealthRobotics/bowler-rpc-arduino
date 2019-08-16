@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef ANALOGINRESOURCE_H
+#define ANALOGINRESOURCE_H
 
 #include "../commands/DiscoveryMetadata.h"
 #include "Resource.h"
@@ -45,3 +46,5 @@ class AnalogInResource : public Resource {
   protected:
   std::uint8_t pin;
 };
+
+#endif

@@ -23,13 +23,12 @@ static int64_t getTime() {
 }
 #elif defined(PLATFORM_TEENSY)
 static uint32_t getTime() {
-  return millis();
+  return micros();
 }
 #endif
 
 void RobotControlCenter::loop() {
-  if (getTime() - lastLoopTime > 500 || getTime() < lastLoopTime // check for the wrap over case
-  ) {
+  if (getTime() - lastLoopTime > 500 || getTime() < lastLoopTime) { // check for the wrap over case
     switch (state) {
     case Startup:
       setup();
