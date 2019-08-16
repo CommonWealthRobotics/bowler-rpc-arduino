@@ -57,7 +57,7 @@ class Resource {
    *
    * @param length The length of the receive payload.
    */
-  std::uint8_t setReceivePayloadLength(std::uint8_t length) {
+  void setReceivePayloadLength(std::uint8_t length) {
     receiveLength = length;
   }
 
@@ -66,7 +66,7 @@ class Resource {
    *
    * @param length The length of the send payload.
    */
-  std::uint8_t setSendPayloadLength(std::uint8_t length) {
+  void setSendPayloadLength(std::uint8_t length) {
     sendLength = length;
   }
 

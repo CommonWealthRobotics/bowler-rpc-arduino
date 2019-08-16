@@ -17,11 +17,16 @@
 #include "DiscoveryPacket.h"
 #include "../resource/AnalogInResource.h"
 #include "../resource/DigitalOutResource.h"
-#include "../resource/ServoResource.h"
 #include <Arduino.h>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+
+#if defined(PLATFORM_ESP32)
+#include "../resource/ESP32ServoResource.h"
+#elif defined(PLATFORM_TEENSY)
+#include "../resource/TeensyServoResource.h"
+#endif
 
 // User function to be called when a packet comes in
 // Buffer contains data from the packet coming in at the start of the function

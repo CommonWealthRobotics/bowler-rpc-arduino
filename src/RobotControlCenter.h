@@ -16,17 +16,25 @@
  */
 #pragma once
 
-#if defined(Arduino_h)
-#include <Arduino.h>
-#endif
-#include "../config.h"
-#include "commands/DiscoveryPacket.h"
+#if defined(PLATFORM_ESP32)
 #include <ESP32Encoder.h>
 #include <ESP32Servo.h>
 #include <Esp32SimplePacketComs.h>
-#include <Esp32WifiManager.h>
 #include <Preferences.h>
+#endif
+
+#include "commands/DiscoveryPacket.h"
 #include <SimplePacketComs.h>
+
+#if defined(USE_WIFI)
+#if defined(PLATFORM_ESP32)
+#include <Esp32WifiManager.h>
+#endif
+#elif defined(USE_HID)
+#if defined(PLATFORM_TEENSY)
+#include <TeensySimplePacketComs.h>
+#endif
+#endif
 
 enum state_t {
   Startup,
@@ -68,7 +76,11 @@ class RobotControlCenter {
   void fastLoop();
 
   private:
+  #if defined(PLATFORM_ESP32)
   int64_t lastLoopTime = 0;
+  #elif defined(PLATFORM_TEENSY)
+  uint32_t lastLoopTime = 0;
+  #endif
 
 #if defined(USE_WIFI)
   // SimplePacketComs implementation using WiFi
@@ -76,6 +88,8 @@ class RobotControlCenter {
 
   // Wifi stack managment state machine
   WifiManager manager;
+#elif defined(USE_HID)
+  HIDSimplePacket coms;
 #endif
 
   // State machine state

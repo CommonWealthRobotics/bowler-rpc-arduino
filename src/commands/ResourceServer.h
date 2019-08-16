@@ -17,9 +17,9 @@
 #pragma once
 
 #include "../resource/Resource.h"
-#include <Esp32SimplePacketComs.h>
 #include <SimplePacketComs.h>
 #include <cstring>
+#include <memory>
 
 class ResourceServer : public PacketEventAbstract {
   public:

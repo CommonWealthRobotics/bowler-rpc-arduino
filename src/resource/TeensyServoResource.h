@@ -16,26 +16,27 @@
  */
 #pragma once
 
+#if defined(PLATFORM_TEENSY)
 #include "../commands/DiscoveryMetadata.h"
 #include "Resource.h"
 #include <Arduino.h>
-#include <ESP32Servo.h>
 #include <cstring>
+#include <PWMServo.h>
 
 class ServoResource : public Resource {
   public:
   ServoResource(std::uint8_t resource, std::uint8_t attachment, const std::uint8_t *attachmentData)
     : Resource(resource, attachment, attachmentData), pin(attachmentData[0]) {
-      if (attachment == ATTACHMENT_POINT_TYPE_PWM_PIN) {
-        std::uint8_t pin = attachmentData[0];
-        std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
-        std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
-        std::uint8_t timerWidth = attachmentData[5];
-        servo.setTimerWidth(timerWidth);
-        servo.attach(pin, minUsLow, minUsHigh);
-      } else {
-        servo.attach(pin);
-      }
+    if (attachment == ATTACHMENT_POINT_TYPE_PWM_PIN) {
+      std::uint8_t pin = attachmentData[0];
+      std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
+      std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
+      std::uint8_t timerWidth = attachmentData[5];
+      // TODO: Complain is timerWidth is specified because teensy does not support it
+      servo.attach(pin, minUsLow, minUsHigh);
+    } else {
+      servo.attach(pin);
+    }
   }
 
   virtual ~ServoResource() {
@@ -52,5 +53,7 @@ class ServoResource : public Resource {
 
   protected:
   std::uint8_t pin;
-  Servo servo;
+  PWMServo servo;
 };
+
+#endif

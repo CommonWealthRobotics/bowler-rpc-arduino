@@ -15,10 +15,20 @@
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "RobotControlCenter.h"
+#include <Arduino.h>
+
+#if defined(PLATFORM_ESP32)
+static int64_t getTime() {
+  return esp_timer_get_time();
+}
+#elif defined(PLATFORM_TEENSY)
+static uint32_t getTime() {
+  return millis();
+}
+#endif
 
 void RobotControlCenter::loop() {
-  if (esp_timer_get_time() - lastLoopTime > 500 ||
-      esp_timer_get_time() < lastLoopTime // check for the wrap over case
+  if (getTime() - lastLoopTime > 500 || getTime() < lastLoopTime // check for the wrap over case
   ) {
     switch (state) {
     case Startup:
@@ -38,7 +48,7 @@ void RobotControlCenter::loop() {
     }
 
     // ensure 0.5 ms spacing *between* reads for Wifi to transact
-    lastLoopTime = esp_timer_get_time();
+    lastLoopTime = getTime();
   }
 
   if (state != Startup) {
@@ -58,6 +68,7 @@ void RobotControlCenter::setup() {
   state = WaitForConnect;
 #if defined(USE_WIFI)
   manager.setupAP();
+#elif defined(USE_HID)
 #else
   Serial.begin(115200);
 #endif
@@ -81,5 +92,7 @@ void RobotControlCenter::fastLoop() {
   } else {
     return;
   }
+#elif defined(USE_HID)
+  coms.server();
 #endif
 }

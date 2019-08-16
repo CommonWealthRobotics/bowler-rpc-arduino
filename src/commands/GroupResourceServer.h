@@ -17,10 +17,10 @@
 #pragma once
 
 #include "../resource/Resource.h"
-#include <Esp32SimplePacketComs.h>
 #include <SimplePacketComs.h>
 #include <cstring>
 #include <vector>
+#include <memory>
 
 class GroupResourceServer : public PacketEventAbstract {
   public:
