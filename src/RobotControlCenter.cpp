@@ -72,10 +72,8 @@ void RobotControlCenter::setup() {
   Serial.begin(115200);
 #endif
 
-#if defined(USE_WIFI)
   // Attach coms
   coms.attach(new DiscoveryPacket(&coms));
-#endif
 }
 
 void RobotControlCenter::fastLoop() {

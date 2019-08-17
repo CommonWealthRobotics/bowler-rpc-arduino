@@ -42,7 +42,8 @@ class ServoResource : public Resource {
 
   virtual ~ServoResource() {
     Serial.printf("Servo detach pin %d\n", pin);
-    servo.detach();
+    //servo.detach();
+    // TODO: Figure out how to implement detach (only defined for __AVR__)
   }
 
   void readFromPayload(std::uint8_t *buffer) override {
