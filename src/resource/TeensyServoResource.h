@@ -21,8 +21,8 @@
 #include "../commands/DiscoveryMetadata.h"
 #include "Resource.h"
 #include <Arduino.h>
-#include <cstring>
 #include <PWMServo.h>
+#include <cstring>
 
 class ServoResource : public Resource {
   public:
@@ -42,7 +42,7 @@ class ServoResource : public Resource {
 
   virtual ~ServoResource() {
     Serial.printf("Servo detach pin %d\n", pin);
-    //servo.detach();
+    // servo.detach();
     // TODO: Figure out how to implement detach (only defined for __AVR__)
   }
 
@@ -58,5 +58,24 @@ class ServoResource : public Resource {
   PWMServo servo;
 };
 
+/**
+ * Checks if the attachment data is valid for the resource implementation.
+ *
+ * @param attachmentData The attachment data to validate.
+ * @return The status code; `STATUS_ACCEPTED` if the attachment data is valid.
+ */
+static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentData) {
+  std::uint8_t pin = attachmentData[0];
+  std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
+  std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
+  std::uint8_t timerWidth = attachmentData[5];
+
+  if ((pin >= 2 && pin <= 10) || pin == 14 || (pin >= 20 && pin <= 23) || pin == 29 || pin == 30 ||
+      (pin >= 35 && pin <= 38)) {
+    return STATUS_ACCEPTED;
+  } else {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  }
+}
 #endif
 #endif

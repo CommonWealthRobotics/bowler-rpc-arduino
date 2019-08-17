@@ -21,8 +21,8 @@
 #include "../commands/DiscoveryMetadata.h"
 #include "Resource.h"
 #include <Arduino.h>
-#include <cstring>
 #include <ESP32Servo.h>
+#include <cstring>
 
 class ServoResource : public Resource {
   public:
@@ -57,5 +57,30 @@ class ServoResource : public Resource {
   Servo servo;
 };
 
+/**
+ * Checks if the attachment data is valid for the resource implementation.
+ *
+ * @param attachmentData The attachment data to validate.
+ * @return The status code; `STATUS_ACCEPTED` if the attachment data is valid.
+ */
+static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentData) {
+  std::uint8_t pin = attachmentData[0];
+  std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
+  std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
+  std::uint8_t timerWidth = attachmentData[5];
+
+  if (pin == 4 || pin == 5 || (pin >= 12 && pin <= 19) || (pin >= 21 && pin <= 23) ||
+      (pin >= 25 && pin <= 27) || pin == 32 || pin == 33) {
+    return STATUS_ACCEPTED;
+  } else if (minUsLow < MIN_PULSE_WIDTH || minUsLow > MAX_PULSE_WIDTH) {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  } else if (minUsHigh < MIN_PULSE_WIDTH || minUsHigh > MAX_PULSE_WIDTH) {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  } else if (timerWidth < 16 || timerWidth > 20) {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  } else {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  }
+}
 #endif
 #endif

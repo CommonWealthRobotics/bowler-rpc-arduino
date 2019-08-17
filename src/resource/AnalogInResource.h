@@ -47,4 +47,29 @@ class AnalogInResource : public Resource {
   std::uint8_t pin;
 };
 
+/**
+ * Checks if the attachment data is valid for the resource implementation.
+ *
+ * @param attachmentData The attachment data to validate.
+ * @return The status code; `STATUS_ACCEPTED` if the attachment data is valid.
+ */
+static std::uint8_t validateAnalogInAttachmentData(const std::uint8_t *attachmentData) {
+  std::uint8_t pin = attachmentData[0];
+
+#if defined(PLATFORM_ESP32)
+  if (pin == 4 || pin == 14 || (pin >= 16 && pin <= 19) || (pin >= 21 && pin <= 23) ||
+      (pin >= 25 && pin <= 27) || (pin >= 32 && pin <= 36) || pin == 39) {
+    return STATUS_ACCEPTED;
+  } else {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  }
+#elif defined(PLATFORM_TEENSY)
+  if (pin >= 0 && pin <= 26) {
+    return STATUS_ACCEPTED;
+  } else {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  }
+#endif
+}
+
 #endif

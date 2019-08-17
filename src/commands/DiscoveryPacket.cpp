@@ -154,6 +154,20 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
   dest[0] = status;
 }
 
+#define VALIDATE_AND_RETURN(RESOURCE_TYPE_NAME)                                                    \
+  std::uint8_t validationStatus = validate##RESOURCE_TYPE_NAME##AttachmentData(attachmentData);    \
+  if (validationStatus != STATUS_ACCEPTED) {                                                       \
+    return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT);                           \
+  } else {                                                                                         \
+    return std::make_tuple(                                                                        \
+      std::unique_ptr<RESOURCE_TYPE_NAME##Resource>(                                               \
+        new RESOURCE_TYPE_NAME##Resource(resourceType, attachment, attachmentData)),               \
+      STATUS_ACCEPTED);                                                                            \
+  }
+
+#define CASE_UNKNOWN_ATTACHMENT                                                                    \
+  default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+
 std::tuple<std::unique_ptr<Resource>, std::uint8_t>
 DiscoveryPacket::makeResource(std::uint8_t resourceType,
                               std::uint8_t attachment,
@@ -162,24 +176,20 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
   case RESOURCE_TYPE_ANALOG_IN: {
     switch (attachment) {
     case ATTACHMENT_POINT_TYPE_PIN: {
-      return std::make_tuple(std::unique_ptr<AnalogInResource>(
-                               new AnalogInResource(resourceType, attachment, attachmentData)),
-                             STATUS_ACCEPTED);
+      VALIDATE_AND_RETURN(AnalogIn)
     }
 
-    default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+      CASE_UNKNOWN_ATTACHMENT
     }
   }
 
   case RESOURCE_TYPE_DIGITAL_OUT: {
     switch (attachment) {
     case ATTACHMENT_POINT_TYPE_PIN: {
-      return std::make_tuple(std::unique_ptr<DigitalOutResource>(
-                               new DigitalOutResource(resourceType, attachment, attachmentData)),
-                             STATUS_ACCEPTED);
+      VALIDATE_AND_RETURN(DigitalOut)
     }
 
-    default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+      CASE_UNKNOWN_ATTACHMENT
     }
   }
 
@@ -192,7 +202,7 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
         STATUS_ACCEPTED);
     }
 
-    default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+      CASE_UNKNOWN_ATTACHMENT
     }
   }
 
