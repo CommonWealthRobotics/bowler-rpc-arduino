@@ -87,7 +87,7 @@ void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std:
   std::uint8_t packetId = buffer[2];
   std::uint8_t count = buffer[3];
 
-  groupServers.emplace(groupId, new GroupResourceServer(packetId));
+  groupServers.emplace(groupId, new GroupResourceServer(packetId, count));
 
   coms->attach(groupServers.at(groupId));
 

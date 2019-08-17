@@ -20,12 +20,14 @@
 #include "../resource/Resource.h"
 #include <SimplePacketComs.h>
 #include <cstring>
-#include <vector>
 #include <memory>
+#include <vector>
 
 class GroupResourceServer : public PacketEventAbstract {
   public:
-  GroupResourceServer(std::uint8_t ipacketId) : PacketEventAbstract(ipacketId) {
+  GroupResourceServer(std::uint8_t ipacketId, std::uint8_t inumOfMembers)
+    : PacketEventAbstract(ipacketId) {
+    resources.reserve(inumOfMembers);
   }
 
   virtual ~GroupResourceServer() {
