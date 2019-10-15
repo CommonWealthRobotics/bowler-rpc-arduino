@@ -48,6 +48,13 @@ void DiscoveryPacket::parseGeneralDiscoveryPacket(std::uint8_t *buffer) {
   const std::uint8_t operation = buffer[0];
   std::uint8_t *dest = (std::uint8_t *)std::calloc(PAYLOAD_LENGTH, sizeof(std::uint8_t));
 
+  if (dest == nullptr) {
+    // Can't allocate another buffer so we have to reuse the original buffer to send the error
+    std::memset(buffer, 0, PAYLOAD_LENGTH * sizeof(buffer[0]));
+    buffer[0] = STATUS_REJECTED_GENERIC;
+    return;
+  }
+
   switch (operation) {
   case OPERATION_DISCOVERY_ID:
     parseDiscoveryPacket(buffer, dest);
@@ -65,6 +72,7 @@ void DiscoveryPacket::parseGeneralDiscoveryPacket(std::uint8_t *buffer) {
     parseDiscardDiscoveryPacket(buffer, dest);
     break;
 
+  // Operations that haven't already been handled are unknown
   default:
     dest[0] = STATUS_REJECTED_UNKNOWN_OPERATION;
     break;
@@ -109,6 +117,7 @@ void DiscoveryPacket::parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer
   std::uint8_t status;
   std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
 
+  // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
   if (resource) {
     // Send length is from the PC perspective, which is our receive length
     resource->setReceivePayloadLength(sendEnd - sendStart);
@@ -123,16 +132,19 @@ void DiscoveryPacket::parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer
 }
 
 void DiscoveryPacket::parseDiscardDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
+  // Always detach before clearing
   for (auto const &elem : resourceServers) {
     delete coms->detach(elem->getId());
   }
   resourceServers.clear();
 
+  // Always detach before clearing
   for (auto const &elem : groupServers) {
     delete coms->detach(elem.second->getId());
   }
   groupServers.clear();
 
+  // Nothing else to do
   dest[0] = STATUS_DISCARD_COMPLETE;
 }
 
@@ -145,6 +157,7 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
   std::uint8_t status;
   std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
 
+  // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
   if (resource) {
     auto server = new ResourceServer(packetId, std::move(resource));
     resourceServers.push_back(server);
@@ -154,6 +167,10 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
   dest[0] = status;
 }
 
+/**
+ * Handles validating a resource type by name. If the resource type is valid, a new resource is
+ * created and returned. Else, an error is returned.
+ */
 #define VALIDATE_AND_RETURN(RESOURCE_TYPE_NAME)                                                    \
   std::uint8_t validationStatus = validate##RESOURCE_TYPE_NAME##AttachmentData(attachmentData);    \
   if (validationStatus != STATUS_ACCEPTED) {                                                       \
@@ -165,6 +182,9 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
       STATUS_ACCEPTED);                                                                            \
   }
 
+/**
+ * Handles the case of an unknown attachment (by returning an error).
+ */
 #define CASE_UNKNOWN_ATTACHMENT                                                                    \
   default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
 
@@ -204,6 +224,7 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
     }
   }
 
+  // Resources that haven't already been handled are unknown
   default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_RESOURCE); }
   }
 }
