@@ -16,8 +16,7 @@ stages:
   jobs:
     - job: Linux
 
-      pool:
-        vmImage: ubuntu-18.04
+      container: rpc-arduino
 
       steps:
         - bash: "platformio run"
