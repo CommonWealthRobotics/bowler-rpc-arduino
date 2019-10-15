@@ -82,5 +82,6 @@ static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentDa
     return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
   }
 }
+
 #endif
 #endif

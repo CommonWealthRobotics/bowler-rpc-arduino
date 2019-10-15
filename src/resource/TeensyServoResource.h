@@ -33,7 +33,7 @@ class ServoResource : public Resource {
       std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
       std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
       std::uint8_t timerWidth = attachmentData[5];
-      // TODO: Complain is timerWidth is specified because teensy does not support it
+      // TODO: Complain if timerWidth is specified because teensy does not support it
       servo.attach(pin, minUsLow, minUsHigh);
     } else {
       servo.attach(pin);
@@ -77,5 +77,6 @@ static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentDa
     return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
   }
 }
+
 #endif
 #endif

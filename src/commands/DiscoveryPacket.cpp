@@ -170,6 +170,9 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
 /**
  * Handles validating a resource type by name. If the resource type is valid, a new resource is
  * created and returned. Else, an error is returned.
+ * 
+ * Validation is done using a method named `validate##RESOURCE_TYPE_NAME##AttachmentData`. The
+ * resource class must be named `RESOURCE_TYPE_NAME##Resource`.
  */
 #define VALIDATE_AND_RETURN(RESOURCE_TYPE_NAME)                                                    \
   std::uint8_t validationStatus = validate##RESOURCE_TYPE_NAME##AttachmentData(attachmentData);    \
