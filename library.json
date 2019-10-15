@@ -1,0 +1,10 @@
+{
+    "name": "bowler-rpc-arduino",
+    "version": "v0.1.1",
+    "keywords": "bowler, rpc, esp32, teensy, wifi, hid",
+    "description": "An implementation of the Bowler RPC for Arduino.",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/CommonWealthRobotics/bowler-rpc-arduino.git"
+    }
+}
