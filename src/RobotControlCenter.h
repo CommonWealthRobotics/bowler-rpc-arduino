@@ -14,22 +14,28 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef SRC_ROBOTCONTROLCENTER_H_
-#define SRC_ROBOTCONTROLCENTER_H_
+#ifndef ROBOTCONTROLCENTER_H
+#define ROBOTCONTROLCENTER_H
 
-#if defined(Arduino_h)
-#include <Arduino.h>
-#endif
-#include "../config.h"
-#include "commands/DiscoveryPacket.h"
+#if defined(PLATFORM_ESP32)
 #include <ESP32Encoder.h>
 #include <ESP32Servo.h>
 #include <Esp32SimplePacketComs.h>
 #include <Preferences.h>
+#endif
+
+#include "commands/DiscoveryPacket.h"
 #include <SimplePacketComs.h>
-#include <WiFi.h>
-#include <server/NameCheckerServer.h>
-#include <wifi/WifiManager.h>
+
+#if defined(USE_WIFI)
+#if defined(PLATFORM_ESP32)
+#include <Esp32WifiManager.h>
+#endif
+#elif defined(USE_HID)
+#if defined(PLATFORM_TEENSY)
+#include <TeensySimplePacketComs.h>
+#endif
+#endif
 
 enum state_t {
   Startup,
@@ -39,73 +45,56 @@ enum state_t {
 };
 
 /**
- * RobotControlCenter is the main class for the 2000 level student code
- *
- * This class is the starting point for all the code. Student code is
- * housed in StudentsRobot class
- * @see StudentsRobot
- *
- * This class managed the overall state machine for dealing with connecting and
- * maintaining connection to the WiFi, constructing the StudentsRobot class, and managing
- * the StudentsRobot calls to updates its state machine as well as its PID loops.
- *
+ * This class manages the overall state machine for maintaining a connection to WiFi.
  */
 class RobotControlCenter {
-  private:
-  int64_t lastPrint = 0;
-
-  // Change this to set your team name
-  String *name;
-
-#if defined(USE_WIFI)
-  // SImple packet coms implementation useing WiFi
-  UDPSimplePacket coms;
-  // WIfi stack managment state machine
-  WifiManager manager;
-#endif
-
-  // attach the PID servers
-  void setupPIDServers();
-  // State machine state
-  state_t state = Startup;
-
   public:
-  /**
-   * RobotControlCenter constructor
-   *
-   * The name is used by the SimplePacketComs stack to locate your specific
-   * robot on the network.
-   */
-  RobotControlCenter(String *name);
-  ~RobotControlCenter() {
+  RobotControlCenter();
+
+  virtual ~RobotControlCenter() {
   }
 
   /**
-   * Pulse the loop function from the main thread
+   * Pulse the loop function from the main thread.
    *
-   * This function is called over and over by the INO loop()
+   * This function is called over and over by the INO loop().
    */
   void loop();
 
   protected:
   /**
-   * Internal setup function to set up all objects
+   * Internal setup function to set up all objects.
    *
-   * This function is called as part of the state machine by the object
+   * This function is called as part of the state machine by the object.
    */
   void setup();
 
   /**
    * 	The fast loop actions
    *
-   * 	This should be run every loop and is internally gated for fast opperation
-   *
-   * 	@see StudentsRobot::Approve
-   * 	@see StudentsRobot::ClearFaults
-   * 	@see StudentsRobot::EStop
-   * 	@see StudentsRobot::PickOrder
+   * 	This should be run every loop and is internally gated for fast opperation.
    */
   void fastLoop();
+
+  private:
+#if defined(PLATFORM_ESP32)
+  int64_t lastLoopTime = 0;
+#elif defined(PLATFORM_TEENSY)
+  uint32_t lastLoopTime = 0;
+#endif
+
+#if defined(USE_WIFI)
+  // SimplePacketComs implementation using WiFi
+  UDPSimplePacket coms;
+
+  // Wifi stack managment state machine
+  WifiManager manager;
+#elif defined(USE_HID)
+  HIDSimplePacket coms;
+#endif
+
+  // State machine state
+  state_t state = Startup;
 };
 
-#endif /* SRC_ROBOTCONTROLCENTER_H_ */
+#endif

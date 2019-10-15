@@ -14,17 +14,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef GROUPRESOURCESERVER_H
+#define GROUPRESOURCESERVER_H
 
 #include "../resource/Resource.h"
-#include <Esp32SimplePacketComs.h>
 #include <SimplePacketComs.h>
 #include <cstring>
+#include <memory>
 #include <vector>
 
 class GroupResourceServer : public PacketEventAbstract {
   public:
-  GroupResourceServer(std::uint8_t ipacketId) : PacketEventAbstract(ipacketId) {
+  GroupResourceServer(std::uint8_t ipacketId, std::uint8_t inumOfMembers)
+    : PacketEventAbstract(ipacketId) {
+    resources.reserve(inumOfMembers);
   }
 
   virtual ~GroupResourceServer() {
@@ -54,3 +57,5 @@ class GroupResourceServer : public PacketEventAbstract {
   protected:
   std::vector<std::unique_ptr<Resource>> resources{};
 };
+
+#endif

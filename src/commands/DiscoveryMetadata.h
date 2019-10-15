@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef DISCOVERYMETADATA_H
+#define DISCOVERYMETADATA_H
 
 #define DISCOVERY_PACKET_ID 1
 #define PAYLOAD_LENGTH 60
@@ -52,3 +53,6 @@
 #define ATTACHMENT_POINT_TYPE_PIN 1
 #define ATTACHMENT_POINT_TYPE_PIN_GROUP 2
 #define ATTACHMENT_POINT_TYPE_USB_PORT 3
+#define ATTACHMENT_POINT_TYPE_PWM_PIN 4
+
+#endif

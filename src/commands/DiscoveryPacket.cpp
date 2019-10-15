@@ -17,11 +17,16 @@
 #include "DiscoveryPacket.h"
 #include "../resource/AnalogInResource.h"
 #include "../resource/DigitalOutResource.h"
-#include "../resource/ServoResource.h"
 #include <Arduino.h>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+
+#if defined(PLATFORM_ESP32)
+#include "../resource/ESP32ServoResource.h"
+#elif defined(PLATFORM_TEENSY)
+#include "../resource/TeensyServoResource.h"
+#endif
 
 // User function to be called when a packet comes in
 // Buffer contains data from the packet coming in at the start of the function
@@ -29,7 +34,6 @@
 void DiscoveryPacket::event(float *buffer) {
   std::uint8_t *buf = (std::uint8_t *)buffer;
 
-  Serial.println("Got DiscoveryPacket event:");
   // Print the bytes we got
   for (int i = 0; i < 60; i++) {
     Serial.print(buf[i]);
@@ -43,6 +47,13 @@ void DiscoveryPacket::event(float *buffer) {
 void DiscoveryPacket::parseGeneralDiscoveryPacket(std::uint8_t *buffer) {
   const std::uint8_t operation = buffer[0];
   std::uint8_t *dest = (std::uint8_t *)std::calloc(PAYLOAD_LENGTH, sizeof(std::uint8_t));
+
+  if (dest == nullptr) {
+    // Can't allocate another buffer so we have to reuse the original buffer to send the error
+    std::memset(buffer, 0, PAYLOAD_LENGTH * sizeof(buffer[0]));
+    buffer[0] = STATUS_REJECTED_GENERIC;
+    return;
+  }
 
   switch (operation) {
   case OPERATION_DISCOVERY_ID:
@@ -61,6 +72,7 @@ void DiscoveryPacket::parseGeneralDiscoveryPacket(std::uint8_t *buffer) {
     parseDiscardDiscoveryPacket(buffer, dest);
     break;
 
+  // Operations that haven't already been handled are unknown
   default:
     dest[0] = STATUS_REJECTED_UNKNOWN_OPERATION;
     break;
@@ -83,7 +95,8 @@ void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std:
   std::uint8_t packetId = buffer[2];
   std::uint8_t count = buffer[3];
 
-  groupServers.emplace(groupId, new GroupResourceServer(packetId));
+  groupServers.emplace(groupId, new GroupResourceServer(packetId, count));
+
   coms->attach(groupServers.at(groupId));
 
   dest[0] = STATUS_ACCEPTED;
@@ -104,6 +117,7 @@ void DiscoveryPacket::parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer
   std::uint8_t status;
   std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
 
+  // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
   if (resource) {
     // Send length is from the PC perspective, which is our receive length
     resource->setReceivePayloadLength(sendEnd - sendStart);
@@ -118,18 +132,19 @@ void DiscoveryPacket::parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer
 }
 
 void DiscoveryPacket::parseDiscardDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
+  // Always detach before clearing
   for (auto const &elem : resourceServers) {
-    coms->detach(elem.first);
-    delete elem.second;
+    delete coms->detach(elem->getId());
   }
   resourceServers.clear();
 
+  // Always detach before clearing
   for (auto const &elem : groupServers) {
-    coms->detach(elem.first);
-    delete elem.second;
+    delete coms->detach(elem.second->getId());
   }
   groupServers.clear();
 
+  // Nothing else to do
   dest[0] = STATUS_DISCARD_COMPLETE;
 }
 
@@ -142,13 +157,39 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
   std::uint8_t status;
   std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
 
+  // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
   if (resource) {
-    resourceServers.emplace(packetId, new ResourceServer(packetId, std::move(resource)));
-    coms->attach(resourceServers.at(packetId));
+    auto server = new ResourceServer(packetId, std::move(resource));
+    resourceServers.push_back(server);
+    coms->attach(server);
   }
 
   dest[0] = status;
 }
+
+/**
+ * Handles validating a resource type by name. If the resource type is valid, a new resource is
+ * created and returned. Else, an error is returned.
+ * 
+ * Validation is done using a method named `validate##RESOURCE_TYPE_NAME##AttachmentData`. The
+ * resource class must be named `RESOURCE_TYPE_NAME##Resource`.
+ */
+#define VALIDATE_AND_RETURN(RESOURCE_TYPE_NAME)                                                    \
+  std::uint8_t validationStatus = validate##RESOURCE_TYPE_NAME##AttachmentData(attachmentData);    \
+  if (validationStatus != STATUS_ACCEPTED) {                                                       \
+    return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT);                           \
+  } else {                                                                                         \
+    return std::make_tuple(                                                                        \
+      std::unique_ptr<RESOURCE_TYPE_NAME##Resource>(                                               \
+        new RESOURCE_TYPE_NAME##Resource(resourceType, attachment, attachmentData)),               \
+      STATUS_ACCEPTED);                                                                            \
+  }
+
+/**
+ * Handles the case of an unknown attachment (by returning an error).
+ */
+#define CASE_UNKNOWN_ATTACHMENT                                                                    \
+  default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
 
 std::tuple<std::unique_ptr<Resource>, std::uint8_t>
 DiscoveryPacket::makeResource(std::uint8_t resourceType,
@@ -158,39 +199,35 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
   case RESOURCE_TYPE_ANALOG_IN: {
     switch (attachment) {
     case ATTACHMENT_POINT_TYPE_PIN: {
-      return std::make_tuple(std::unique_ptr<AnalogInResource>(
-                               new AnalogInResource(resourceType, attachment, attachmentData)),
-                             STATUS_ACCEPTED);
+      VALIDATE_AND_RETURN(AnalogIn)
     }
 
-    default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+      CASE_UNKNOWN_ATTACHMENT
     }
   }
 
   case RESOURCE_TYPE_DIGITAL_OUT: {
     switch (attachment) {
     case ATTACHMENT_POINT_TYPE_PIN: {
-      return std::make_tuple(std::unique_ptr<DigitalOutResource>(
-                               new DigitalOutResource(resourceType, attachment, attachmentData)),
-                             STATUS_ACCEPTED);
+      VALIDATE_AND_RETURN(DigitalOut)
     }
 
-    default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+      CASE_UNKNOWN_ATTACHMENT
     }
   }
 
   case RESOURCE_TYPE_SERVO: {
     switch (attachment) {
-    case ATTACHMENT_POINT_TYPE_PIN: {
-      return std::make_tuple(
-        std::unique_ptr<ServoResource>(new ServoResource(resourceType, attachment, attachmentData)),
-        STATUS_ACCEPTED);
+    case ATTACHMENT_POINT_TYPE_PIN:
+    case ATTACHMENT_POINT_TYPE_PWM_PIN: {
+      VALIDATE_AND_RETURN(Servo)
     }
 
-    default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+      CASE_UNKNOWN_ATTACHMENT
     }
   }
 
+  // Resources that haven't already been handled are unknown
   default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_RESOURCE); }
   }
 }

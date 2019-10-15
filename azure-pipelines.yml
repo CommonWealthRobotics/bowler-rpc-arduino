@@ -1,0 +1,23 @@
+trigger:
+  branches:
+    include:
+      - '*'
+  tags:
+    include:
+      - '*'
+
+resources:
+  containers:
+  - container: rpc-arduino
+    image: commonwealthrobotics/rpc-arduino:latest
+
+stages:
+- stage: Build
+  jobs:
+    - job: Linux
+
+      container: rpc-arduino
+
+      steps:
+        - bash: "platformio run"
+          displayName: "Build"

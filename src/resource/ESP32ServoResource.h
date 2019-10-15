@@ -14,28 +14,39 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef DIGITALOUTRESOURCE_H
-#define DIGITALOUTRESOURCE_H
+#ifndef ESP32SERVORESOURCE_H
+#define ESP32SERVORESOURCE_H
 
+#if defined(PLATFORM_ESP32)
 #include "../commands/DiscoveryMetadata.h"
 #include "Resource.h"
 #include <Arduino.h>
+#include <ESP32Servo.h>
 #include <cstring>
 
-class DigitalOutResource : public Resource {
+class ServoResource : public Resource {
   public:
-  DigitalOutResource(std::uint8_t resource,
-                     std::uint8_t attachment,
-                     const std::uint8_t *attachmentData)
+  ServoResource(std::uint8_t resource, std::uint8_t attachment, const std::uint8_t *attachmentData)
     : Resource(resource, attachment, attachmentData), pin(attachmentData[0]) {
-    pinMode(pin, OUTPUT);
+    if (attachment == ATTACHMENT_POINT_TYPE_PWM_PIN) {
+      std::uint8_t pin = attachmentData[0];
+      std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
+      std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
+      std::uint8_t timerWidth = attachmentData[5];
+      servo.setTimerWidth(timerWidth);
+      servo.attach(pin, minUsLow, minUsHigh);
+    } else {
+      servo.attach(pin);
+    }
   }
 
-  virtual ~DigitalOutResource() {
+  virtual ~ServoResource() {
+    Serial.printf("Servo detach pin %d\n", pin);
+    servo.detach();
   }
 
   void readFromPayload(std::uint8_t *buffer) override {
-    digitalWrite(pin, buffer[0]);
+    servo.write(buffer[0]);
   }
 
   void writeToPayload(std::uint8_t *buffer) override {
@@ -43,6 +54,7 @@ class DigitalOutResource : public Resource {
 
   protected:
   std::uint8_t pin;
+  Servo servo;
 };
 
 /**
@@ -51,22 +63,25 @@ class DigitalOutResource : public Resource {
  * @param attachmentData The attachment data to validate.
  * @return The status code; `STATUS_ACCEPTED` if the attachment data is valid.
  */
-static std::uint8_t validateDigitalOutAttachmentData(const std::uint8_t *attachmentData) {
+static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentData) {
   std::uint8_t pin = attachmentData[0];
+  std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
+  std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
+  std::uint8_t timerWidth = attachmentData[5];
 
-#if defined(PLATFORM_ESP32)
-  if (pin == 2 || pin == 4 || pin == 5 || (pin >= 12 && pin <= 19) || (pin >= 21 && pin <= 23) ||
+  if (pin == 4 || pin == 5 || (pin >= 12 && pin <= 19) || (pin >= 21 && pin <= 23) ||
       (pin >= 25 && pin <= 27) || pin == 32 || pin == 33) {
     return STATUS_ACCEPTED;
+  } else if (minUsLow < MIN_PULSE_WIDTH || minUsLow > MAX_PULSE_WIDTH) {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  } else if (minUsHigh < MIN_PULSE_WIDTH || minUsHigh > MAX_PULSE_WIDTH) {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
+  } else if (timerWidth < 16 || timerWidth > 20) {
+    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
   } else {
     return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
   }
-#elif defined(PLATFORM_TEENSY)
-  if (pin >= 0 && pin <= 57) {
-    return STATUS_ACCEPTED;
-  } else {
-    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
-  }
-#endif
 }
+
+#endif
 #endif

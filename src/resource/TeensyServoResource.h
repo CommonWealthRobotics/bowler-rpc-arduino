@@ -14,37 +14,48 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef ANALOGINRESOURCE_H
-#define ANALOGINRESOURCE_H
+#ifndef TEENSYSERVORESOURCE_H
+#define TEENSYSERVORESOURCE_H
 
+#if defined(PLATFORM_TEENSY)
 #include "../commands/DiscoveryMetadata.h"
 #include "Resource.h"
 #include <Arduino.h>
+#include <PWMServo.h>
 #include <cstring>
 
-class AnalogInResource : public Resource {
+class ServoResource : public Resource {
   public:
-  AnalogInResource(std::uint8_t resource,
-                   std::uint8_t attachment,
-                   const std::uint8_t *attachmentData)
+  ServoResource(std::uint8_t resource, std::uint8_t attachment, const std::uint8_t *attachmentData)
     : Resource(resource, attachment, attachmentData), pin(attachmentData[0]) {
-    pinMode(pin, INPUT);
+    if (attachment == ATTACHMENT_POINT_TYPE_PWM_PIN) {
+      std::uint8_t pin = attachmentData[0];
+      std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
+      std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
+      std::uint8_t timerWidth = attachmentData[5];
+      // TODO: Complain if timerWidth is specified because teensy does not support it
+      servo.attach(pin, minUsLow, minUsHigh);
+    } else {
+      servo.attach(pin);
+    }
   }
 
-  virtual ~AnalogInResource() {
+  virtual ~ServoResource() {
+    Serial.printf("Servo detach pin %d\n", pin);
+    // servo.detach();
+    // TODO: Figure out how to implement detach (only defined for __AVR__)
   }
 
   void readFromPayload(std::uint8_t *buffer) override {
+    servo.write(buffer[0]);
   }
 
   void writeToPayload(std::uint8_t *buffer) override {
-    std::int16_t value = analogRead(pin);
-    buffer[0] = value & 0xF;
-    buffer[1] = value & 0xF0;
   }
 
   protected:
   std::uint8_t pin;
+  PWMServo servo;
 };
 
 /**
@@ -53,23 +64,19 @@ class AnalogInResource : public Resource {
  * @param attachmentData The attachment data to validate.
  * @return The status code; `STATUS_ACCEPTED` if the attachment data is valid.
  */
-static std::uint8_t validateAnalogInAttachmentData(const std::uint8_t *attachmentData) {
+static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentData) {
   std::uint8_t pin = attachmentData[0];
+  std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
+  std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
+  std::uint8_t timerWidth = attachmentData[5];
 
-#if defined(PLATFORM_ESP32)
-  if (pin == 4 || pin == 14 || (pin >= 16 && pin <= 19) || (pin >= 21 && pin <= 23) ||
-      (pin >= 25 && pin <= 27) || (pin >= 32 && pin <= 36) || pin == 39) {
+  if ((pin >= 2 && pin <= 10) || pin == 14 || (pin >= 20 && pin <= 23) || pin == 29 || pin == 30 ||
+      (pin >= 35 && pin <= 38)) {
     return STATUS_ACCEPTED;
   } else {
     return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
   }
-#elif defined(PLATFORM_TEENSY)
-  if (pin >= 0 && pin <= 26) {
-    return STATUS_ACCEPTED;
-  } else {
-    return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
-  }
-#endif
 }
 
+#endif
 #endif
