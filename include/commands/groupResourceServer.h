@@ -14,32 +14,48 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef RESOURCESERVER_H
-#define RESOURCESERVER_H
+#ifndef GROUPRESOURCESERVER_H
+#define GROUPRESOURCESERVER_H
 
-#include "../resource/Resource.h"
+#include "../resource/resource.h"
 #include <SimplePacketComs.h>
 #include <cstring>
 #include <memory>
+#include <vector>
 
-class ResourceServer : public PacketEventAbstract {
+class GroupResourceServer : public PacketEventAbstract {
   public:
-  ResourceServer(std::uint8_t ipacketId, std::unique_ptr<Resource> iresource)
-    : PacketEventAbstract(ipacketId), resource(std::move(iresource)) {
+  GroupResourceServer(std::uint8_t ipacketId, std::uint8_t inumOfMembers)
+    : PacketEventAbstract(ipacketId) {
+    resources.reserve(inumOfMembers);
   }
 
-  virtual ~ResourceServer() {
+  virtual ~GroupResourceServer() {
   }
 
   void event(float *buffer) override {
     std::uint8_t *buf = (std::uint8_t *)buffer;
-    resource->readFromPayload(buf);
+
+    for (auto &resource : resources) {
+      resource->readFromPayload(buf);
+      buf = buf + resource->getReceivePayloadLength();
+    }
+
+    buf = (std::uint8_t *)buffer;
     std::memset(buf, 0, PAYLOAD_LENGTH * (sizeof buf[0]));
-    resource->writeToPayload(buf);
+
+    for (auto &resource : resources) {
+      resource->writeToPayload(buf);
+      buf = buf + resource->getSendPayloadLength();
+    }
+  }
+
+  void addResource(std::unique_ptr<Resource> resource) {
+    resources.push_back(std::move(resource));
   }
 
   protected:
-  std::unique_ptr<Resource> resource;
+  std::vector<std::unique_ptr<Resource>> resources{};
 };
 
 #endif

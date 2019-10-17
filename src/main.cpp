@@ -1,13 +1,11 @@
 #include <Arduino.h>
 
-#include "RobotControlCenter.h"
-
-RobotControlCenter *controlCenter;
+#if defined(USE_WIFI)
+#include <WiFi.h>
+#endif
 
 void setup() {
-  controlCenter = new RobotControlCenter();
 }
 
 void loop() {
-  controlCenter->loop(); // run the state machine pulse
 }

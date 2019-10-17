@@ -17,10 +17,10 @@
 #ifndef DISCOVERYPACKET_H
 #define DISCOVERYPACKET_H
 
-#include "../resource/Resource.h"
-#include "DiscoveryMetadata.h"
-#include "GroupResourceServer.h"
-#include "ResourceServer.h"
+#include "resource/resource.h"
+#include "commands/discoveryMetadata.h"
+#include "commands/groupResourceServer.h"
+#include "commands/resourceServer.h"
 #include <SimplePacketComs.h>
 #include <array>
 #include <map>

@@ -17,7 +17,7 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#include "../commands/DiscoveryMetadata.h"
+#include "../commands/discoveryMetadata.h"
 #include <array>
 #include <cstdint>
 
