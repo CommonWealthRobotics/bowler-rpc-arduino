@@ -167,30 +167,6 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
   dest[0] = status;
 }
 
-/**
- * Handles validating a resource type by name. If the resource type is valid, a new resource is
- * created and returned. Else, an error is returned.
- * 
- * Validation is done using a method named `validate##RESOURCE_TYPE_NAME##AttachmentData`. The
- * resource class must be named `RESOURCE_TYPE_NAME##Resource`.
- */
-#define VALIDATE_AND_RETURN(RESOURCE_TYPE_NAME)                                                    \
-  std::uint8_t validationStatus = validate##RESOURCE_TYPE_NAME##AttachmentData(attachmentData);    \
-  if (validationStatus != STATUS_ACCEPTED) {                                                       \
-    return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT);                           \
-  } else {                                                                                         \
-    return std::make_tuple(                                                                        \
-      std::unique_ptr<RESOURCE_TYPE_NAME##Resource>(                                               \
-        new RESOURCE_TYPE_NAME##Resource(resourceType, attachment, attachmentData)),               \
-      STATUS_ACCEPTED);                                                                            \
-  }
-
-/**
- * Handles the case of an unknown attachment (by returning an error).
- */
-#define CASE_UNKNOWN_ATTACHMENT                                                                    \
-  default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
-
 std::tuple<std::unique_ptr<Resource>, std::uint8_t>
 DiscoveryPacket::makeResource(std::uint8_t resourceType,
                               std::uint8_t attachment,
