@@ -18,8 +18,8 @@
 #define ESP32SERVORESOURCE_H
 
 #if defined(PLATFORM_ESP32)
-#include "../commands/DiscoveryMetadata.h"
-#include "Resource.h"
+#include "commands/discoveryMetadata.h"
+#include "resource/resource.h"
 #include <Arduino.h>
 #include <ESP32Servo.h>
 #include <cstring>

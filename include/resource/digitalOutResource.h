@@ -17,8 +17,8 @@
 #ifndef DIGITALOUTRESOURCE_H
 #define DIGITALOUTRESOURCE_H
 
-#include "../commands/DiscoveryMetadata.h"
-#include "Resource.h"
+#include "commands/discoveryMetadata.h"
+#include "resource/resource.h"
 #include <Arduino.h>
 #include <cstring>
 

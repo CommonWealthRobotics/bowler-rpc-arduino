@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "DiscoveryPacket.h"
-#include "../resource/AnalogInResource.h"
-#include "../resource/DigitalOutResource.h"
+#include "commands/discoveryPacket.h"
+#include "resource/analogInResource.h"
+#include "resource/digitalOutResource.h"
 #include <Arduino.h>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
 
 #if defined(PLATFORM_ESP32)
-#include "../resource/ESP32ServoResource.h"
+#include "resource/esp32ServoResource.h"
 #elif defined(PLATFORM_TEENSY)
-#include "../resource/TeensyServoResource.h"
+#include "resource/teensyServoResource.h"
 #endif
 
 // User function to be called when a packet comes in
