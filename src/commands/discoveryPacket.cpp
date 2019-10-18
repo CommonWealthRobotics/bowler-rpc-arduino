@@ -14,6 +14,10 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
+#if defined(USE_WIFI)
+#include <WiFi.h> // This is needed so the PlatformIO finds the right WiFi implementation
+#endif
+
 #include "commands/discoveryPacket.h"
 #include "resource/analogInResource.h"
 #include "resource/digitalOutResource.h"
@@ -153,6 +157,12 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
                                      std::uint8_t attachment,
                                      const std::uint8_t *attachmentData,
                                      std::uint8_t *dest) {
+  if (packetId == DISCOVERY_PACKET_ID) {
+    // TODO: Add STATUS_REJECTED_INVALID_PACKET_ID
+    dest[0] = STATUS_REJECTED_GENERIC;
+    return;
+  }
+
   std::unique_ptr<Resource> resource;
   std::uint8_t status;
   std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);

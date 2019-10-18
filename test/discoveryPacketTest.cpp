@@ -14,15 +14,26 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-// This file is so CI can test building separately from unit testing
-#if !defined(UNIT_TEST)
-
+#include "commands/discoveryPacket.h"
+#include "mockSimplePacketComs.h"
 #include <Arduino.h>
+#include <unity.h>
+
+void test_discover_with_packetid_equal_to_discovery_packetid() {
+  MockSimplePacketComs coms;
+  DiscoveryPacket p(&coms);
+  std::array<std::uint8_t, 60> buffer{
+    1, DISCOVERY_PACKET_ID, RESOURCE_TYPE_ANALOG_IN, ATTACHMENT_POINT_TYPE_PIN, 1};
+  p.event((float *)buffer.data());
+  TEST_ASSERT_EQUAL(STATUS_REJECTED_GENERIC, buffer[0]);
+}
 
 void setup() {
+  delay(2000);
+  UNITY_BEGIN();
+  RUN_TEST(test_discover_with_packetid_equal_to_discovery_packetid);
+  UNITY_END();
 }
 
 void loop() {
 }
-
-#endif

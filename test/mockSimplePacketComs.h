@@ -14,15 +14,26 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-// This file is so CI can test building separately from unit testing
-#if !defined(UNIT_TEST)
+#ifndef MOCKSIMPLEPACKETCOMS_H
+#define MOCKSIMPLEPACKETCOMS_H
 
-#include <Arduino.h>
+#include <SimplePacketComs.h>
 
-void setup() {
-}
+/**
+ * A mock SimplePacketComs that does not receive or send packets.
+ */
+class MockSimplePacketComs : public SimplePacketComsAbstract {
+  bool isPacketAvailible() override {
+    return false;
+  }
 
-void loop() {
-}
+  int32_t getPacket(uint8_t *buffer, uint32_t numberOfBytes) override {
+    return 0;
+  }
+
+  int32_t sendPacket(uint8_t *buffer, uint32_t numberOfBytes) override {
+    return 0;
+  }
+};
 
 #endif
