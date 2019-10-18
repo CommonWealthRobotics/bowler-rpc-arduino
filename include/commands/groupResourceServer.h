@@ -26,8 +26,8 @@
 class GroupResourceServer : public PacketEventAbstract {
   public:
   GroupResourceServer(std::uint8_t ipacketId, std::uint8_t inumOfMembers)
-    : PacketEventAbstract(ipacketId) {
-    resources.reserve(inumOfMembers);
+    : PacketEventAbstract(ipacketId), spaceRemaining(inumOfMembers) {
+    resources.reserve(spaceRemaining);
   }
 
   virtual ~GroupResourceServer() {
@@ -52,10 +52,16 @@ class GroupResourceServer : public PacketEventAbstract {
 
   void addResource(std::unique_ptr<Resource> resource) {
     resources.push_back(std::move(resource));
+    spaceRemaining--;
+  }
+
+  bool hasSpaceRemaining() const {
+    return spaceRemaining > 0;
   }
 
   protected:
   std::vector<std::unique_ptr<Resource>> resources{};
+  std::uint8_t spaceRemaining{0};
 };
 
 #endif

@@ -20,6 +20,7 @@
 
 #include "commands/discoveryPacket.h"
 #include "resource/analogInResource.h"
+#include "resource/digitalInResource.h"
 #include "resource/digitalOutResource.h"
 #include <Arduino.h>
 #include <algorithm>
@@ -38,14 +39,25 @@
 void DiscoveryPacket::event(float *buffer) {
   std::uint8_t *buf = (std::uint8_t *)buffer;
 
-  // Print the bytes we got
+#if defined(DEBUG_DISCOVERY)
+  Serial.println("Got ");
   for (int i = 0; i < 60; i++) {
     Serial.print(buf[i]);
     Serial.print(", ");
   }
   Serial.println();
+#endif
 
   parseGeneralDiscoveryPacket(buf);
+
+#if defined(DEBUG_DISCOVERY)
+  Serial.println("Sending ");
+  for (int i = 0; i < 60; i++) {
+    Serial.print(buf[i]);
+    Serial.print(", ");
+  }
+  Serial.println();
+#endif
 }
 
 void DiscoveryPacket::parseGeneralDiscoveryPacket(std::uint8_t *buffer) {
@@ -99,10 +111,18 @@ void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std:
   std::uint8_t packetId = buffer[2];
   std::uint8_t count = buffer[3];
 
+  if (groupServers.find(groupId) != groupServers.end()) {
+    // Check if the group was already created
+    dest[0] = STATUS_REJECTED_INVALID_GROUP_ID;
+    return;
+  } else if (packetId == DISCOVERY_PACKET_ID) {
+    // Can't have a packet id equal to the discovery packet id
+    dest[0] = STATUS_REJECTED_INVALID_PACKET_ID;
+    return;
+  }
+
   groupServers.emplace(groupId, new GroupResourceServer(packetId, count));
-
   coms->attach(groupServers.at(groupId));
-
   dest[0] = STATUS_ACCEPTED;
 }
 
@@ -116,6 +136,20 @@ void DiscoveryPacket::parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer
   std::uint8_t resourceType = buffer[6];
   std::uint8_t attachment = buffer[7];
   const std::uint8_t *attachmentData = buffer + 8;
+
+  if (groupServers.find(groupId) == groupServers.end()) {
+    // Check that the group exists first
+    dest[0] = STATUS_REJECTED_INVALID_GROUP_ID;
+    return;
+  } else if (!groupServers.at(groupId)->hasSpaceRemaining()) {
+    // Check if the resource can be added to the group before we make it
+    dest[0] = STATUS_REJECTED_GROUP_FULL;
+    return;
+  } else if (sendStart > sendEnd || receiveStart > receiveEnd) {
+    // Check if the send or receive indices are invalid
+    dest[0] = STATUS_REJECTED_GENERIC;
+    return;
+  }
 
   std::unique_ptr<Resource> resource;
   std::uint8_t status;
@@ -185,6 +219,16 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
     switch (attachment) {
     case ATTACHMENT_POINT_TYPE_PIN: {
       VALIDATE_AND_RETURN(AnalogIn)
+    }
+
+      CASE_UNKNOWN_ATTACHMENT
+    }
+  }
+
+  case RESOURCE_TYPE_DIGITAL_IN: {
+    switch (attachment) {
+    case ATTACHMENT_POINT_TYPE_PIN: {
+      VALIDATE_AND_RETURN(DigitalIn)
     }
 
       CASE_UNKNOWN_ATTACHMENT
