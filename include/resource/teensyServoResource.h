@@ -23,31 +23,37 @@
 #include <Arduino.h>
 #include <PWMServo.h>
 #include <cstring>
+#include <memory>
 
 class ServoResource : public Resource {
   public:
-  ServoResource(std::uint8_t resource, std::uint8_t attachment, const std::uint8_t *attachmentData)
-    : Resource(resource, attachment, attachmentData), pin(attachmentData[0]) {
+  virtual ~ServoResource() {
+    // servo.detach();
+    // TODO: Figure out how to implement detach (only defined for __AVR__)
+  }
+
+  std::uint8_t initialize(std::uint8_t resource,
+                          std::uint8_t attachment,
+                          const std::uint8_t *attachmentData) override {
+    pin = attachmentData[0];
+    servo = std::unique_ptr<PWMServo>(new PWMServo());
+
     if (attachment == ATTACHMENT_POINT_TYPE_PWM_PIN) {
       std::uint8_t pin = attachmentData[0];
       std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
       std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
       std::uint8_t timerWidth = attachmentData[5];
       // TODO: Complain if timerWidth is specified because teensy does not support it
-      servo.attach(pin, minUsLow, minUsHigh);
+      servo->attach(pin, minUsLow, minUsHigh);
     } else {
-      servo.attach(pin);
+      servo->attach(pin);
     }
-  }
 
-  virtual ~ServoResource() {
-    Serial.printf("Servo detach pin %d\n", pin);
-    // servo.detach();
-    // TODO: Figure out how to implement detach (only defined for __AVR__)
+    return STATUS_ACCEPTED;
   }
 
   void readFromPayload(std::uint8_t *buffer) override {
-    servo.write(buffer[0]);
+    servo->write(buffer[0]);
   }
 
   void writeToPayload(std::uint8_t *buffer) override {
@@ -55,7 +61,7 @@ class ServoResource : public Resource {
 
   protected:
   std::uint8_t pin;
-  PWMServo servo;
+  std::unique_ptr<PWMServo> servo;
 };
 
 /**

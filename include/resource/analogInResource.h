@@ -24,14 +24,12 @@
 
 class AnalogInResource : public Resource {
   public:
-  AnalogInResource(std::uint8_t resource,
-                   std::uint8_t attachment,
-                   const std::uint8_t *attachmentData)
-    : Resource(resource, attachment, attachmentData), pin(attachmentData[0]) {
+  std::uint8_t initialize(std::uint8_t resource,
+                          std::uint8_t attachment,
+                          const std::uint8_t *attachmentData) override {
+    pin = attachmentData[0];
     pinMode(pin, INPUT);
-  }
-
-  virtual ~AnalogInResource() {
+    return STATUS_ACCEPTED;
   }
 
   void readFromPayload(std::uint8_t *buffer) override {
