@@ -30,14 +30,16 @@ class Resource {
    * @param attachment The attachment point type.
    * @param attachmentData Any attachment data.
    */
-  Resource(std::uint8_t resource, std::uint8_t attachment, const std::uint8_t *attachmentData) {
-  }
+  Resource() = default;
 
   /**
    * This should disconnect the resource, if applicable.
    */
-  virtual ~Resource() {
-  }
+  virtual ~Resource() = default;
+
+  virtual std::uint8_t initialize(std::uint8_t resource,
+                                  std::uint8_t attachment,
+                                  const std::uint8_t *attachmentData) = 0;
 
   /**
    * Reads from the buffer to receive a command.

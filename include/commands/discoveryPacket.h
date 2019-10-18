@@ -17,10 +17,10 @@
 #ifndef DISCOVERYPACKET_H
 #define DISCOVERYPACKET_H
 
-#include "resource/resource.h"
 #include "commands/discoveryMetadata.h"
 #include "commands/groupResourceServer.h"
 #include "commands/resourceServer.h"
+#include "resource/resource.h"
 #include <SimplePacketComs.h>
 #include <array>
 #include <map>
@@ -30,7 +30,7 @@
 
 /**
  * Handles validating a resource type by name. If the resource type is valid, a new resource is
- * created and returned. Else, an error is returned.
+ * created, initialized, and returned. Else, an error is returned.
  *
  * Validation is done using a method named `validate##RESOURCE_TYPE_NAME##AttachmentData`. The
  * resource class must be named `RESOURCE_TYPE_NAME##Resource`.
@@ -38,12 +38,17 @@
 #define VALIDATE_AND_RETURN(RESOURCE_TYPE_NAME)                                                    \
   std::uint8_t validationStatus = validate##RESOURCE_TYPE_NAME##AttachmentData(attachmentData);    \
   if (validationStatus != STATUS_ACCEPTED) {                                                       \
-    return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT);                           \
+    return std::make_tuple(nullptr, validationStatus);                                             \
   } else {                                                                                         \
-    return std::make_tuple(                                                                        \
-      std::unique_ptr<RESOURCE_TYPE_NAME##Resource>(                                               \
-        new RESOURCE_TYPE_NAME##Resource(resourceType, attachment, attachmentData)),               \
-      STATUS_ACCEPTED);                                                                            \
+    auto resource =                                                                                \
+      std::unique_ptr<RESOURCE_TYPE_NAME##Resource>(new RESOURCE_TYPE_NAME##Resource());           \
+    std::uint8_t initializeStatus =                                                                \
+      resource->initialize(resourceType, attachment, attachmentData);                              \
+    if (initializeStatus == STATUS_ACCEPTED) {                                                     \
+      return std::make_tuple(std::move(resource), initializeStatus);                               \
+    } else {                                                                                       \
+      return std::make_tuple(nullptr, initializeStatus);                                           \
+    }                                                                                              \
   }
 
 /**

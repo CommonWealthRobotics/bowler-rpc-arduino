@@ -24,14 +24,12 @@
 
 class DigitalOutResource : public Resource {
   public:
-  DigitalOutResource(std::uint8_t resource,
-                     std::uint8_t attachment,
-                     const std::uint8_t *attachmentData)
-    : Resource(resource, attachment, attachmentData), pin(attachmentData[0]) {
+  std::uint8_t initialize(std::uint8_t resource,
+                          std::uint8_t attachment,
+                          const std::uint8_t *attachmentData) override {
+    pin = attachmentData[0];
     pinMode(pin, OUTPUT);
-  }
-
-  virtual ~DigitalOutResource() {
+    return STATUS_ACCEPTED;
   }
 
   void readFromPayload(std::uint8_t *buffer) override {
