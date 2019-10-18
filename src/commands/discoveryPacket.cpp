@@ -158,8 +158,7 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
                                      const std::uint8_t *attachmentData,
                                      std::uint8_t *dest) {
   if (packetId == DISCOVERY_PACKET_ID) {
-    // TODO: Add STATUS_REJECTED_INVALID_PACKET_ID
-    dest[0] = STATUS_REJECTED_GENERIC;
+    dest[0] = STATUS_REJECTED_INVALID_PACKET_ID;
     return;
   }
 
