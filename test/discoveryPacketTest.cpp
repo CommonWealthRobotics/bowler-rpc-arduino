@@ -168,6 +168,58 @@ void add_group_member_with_receive_end_greater_than_receive_start() {
   TEST_ASSERT_EQUAL(STATUS_REJECTED_GENERIC, buffer[0]);
 }
 
+void unknown_operation() {
+  MockSimplePacketComs coms;
+  DiscoveryPacket p(&coms);
+
+  std::array<std::uint8_t, 60> buffer{99};
+  p.event((float *)buffer.data());
+  TEST_ASSERT_EQUAL(STATUS_REJECTED_UNKNOWN_OPERATION, buffer[0]);
+}
+
+void discard() {
+  MockSimplePacketComs coms;
+  DiscoveryPacket p(&coms);
+
+  // Discover the group
+  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+  p.event((float *)buffer.data());
+  TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
+
+  // Adding the first member is fine
+  buffer = {OPERATION_GROUP_MEMBER_DISCOVERY_ID,
+            1,
+            0,
+            0,
+            0,
+            1,
+            RESOURCE_TYPE_DIGITAL_IN,
+            ATTACHMENT_POINT_TYPE_PIN,
+            2};
+  p.event((float *)buffer.data());
+  TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
+
+  // Discover a resource
+  buffer = {OPERATION_DISCOVERY_ID, 3, RESOURCE_TYPE_DIGITAL_IN, ATTACHMENT_POINT_TYPE_PIN, 18};
+  p.event((float *)buffer.data());
+  TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
+
+  // Discard
+  buffer = {OPERATION_DISCARD_DISCOVERY_ID};
+  p.event((float *)buffer.data());
+  TEST_ASSERT_EQUAL(STATUS_DISCARD_COMPLETE, buffer[0]);
+}
+
+void discard_with_empty_server() {
+  MockSimplePacketComs coms;
+  DiscoveryPacket p(&coms);
+
+  // Discard
+  std::array<std::uint8_t, 60> buffer{OPERATION_DISCARD_DISCOVERY_ID};
+  p.event((float *)buffer.data());
+  TEST_ASSERT_EQUAL(STATUS_DISCARD_COMPLETE, buffer[0]);
+}
+
 void setup() {
   delay(2000);
   UNITY_BEGIN();
@@ -179,6 +231,9 @@ void setup() {
   RUN_TEST(add_too_many_members_to_group);
   RUN_TEST(add_group_member_with_send_end_greater_than_send_start);
   RUN_TEST(add_group_member_with_receive_end_greater_than_receive_start);
+  RUN_TEST(unknown_operation);
+  RUN_TEST(discard);
+  RUN_TEST(discard_with_empty_server);
   UNITY_END();
 }
 
