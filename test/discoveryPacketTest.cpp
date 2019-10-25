@@ -15,84 +15,86 @@
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "commands/discoveryPacket.h"
-#include "mockSimplePacketComs.h"
+#include "mockBowlerComs.h"
 #include <Arduino.h>
+#include <bowlerDeviceServerUtil.hpp>
 #include <unity.h>
 
 void discover_with_packetid_equal_to_discovery_packetid() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // Can't add a new packet with the discovery packet id
-  std::array<std::uint8_t, 60> buffer{OPERATION_DISCOVERY_ID,
-                                      DISCOVERY_PACKET_ID,
-                                      RESOURCE_TYPE_ANALOG_IN,
-                                      ATTACHMENT_POINT_TYPE_PIN,
-                                      1};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PAYLOAD_SIZE> buffer{OPERATION_DISCOVERY_ID,
+                                                        DISCOVERY_PACKET_ID,
+                                                        RESOURCE_TYPE_ANALOG_IN,
+                                                        ATTACHMENT_POINT_TYPE_PIN,
+                                                        1};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_INVALID_PACKET_ID, buffer[0]);
 }
 
 void discover_group_with_packetid_equal_to_discovery_packetid() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // Can't add a new group with the discovery packet id
-  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_DISCOVERY_ID, DISCOVERY_PACKET_ID, 1};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{
+    OPERATION_GROUP_DISCOVERY_ID, DISCOVERY_PACKET_ID, 1};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_INVALID_PACKET_ID, buffer[0]);
 }
 
 void discover_group_twice() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // The first time the group is discovered, it should be accepted
-  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // The second time the group is discovered, it should be rejected
-  buffer = {OPERATION_GROUP_DISCOVERY_ID, 1, 1, 1};
-  p.event((float *)buffer.data());
+  buffer = {OPERATION_GROUP_DISCOVERY_ID, 1, 3, 1};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_INVALID_GROUP_ID, buffer[0]);
 }
 
 void discover_group_with_zero_members() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // A group with a count of zero should be accepted
-  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 0};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 0};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 }
 
 void discover_group_member_in_nonexistent_group() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // Can't put a group member into a nonexistent group
-  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_MEMBER_DISCOVERY_ID,
-                                      1,
-                                      0,
-                                      0,
-                                      0,
-                                      1,
-                                      RESOURCE_TYPE_DIGITAL_IN,
-                                      ATTACHMENT_POINT_TYPE_PIN,
-                                      2};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{OPERATION_GROUP_MEMBER_DISCOVERY_ID,
+                                                       1,
+                                                       0,
+                                                       0,
+                                                       0,
+                                                       1,
+                                                       RESOURCE_TYPE_DIGITAL_IN,
+                                                       ATTACHMENT_POINT_TYPE_PIN,
+                                                       2};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_INVALID_GROUP_ID, buffer[0]);
 }
 
 void add_too_many_members_to_group() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // Discover the group
-  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // Adding the first member is fine
@@ -105,7 +107,7 @@ void add_too_many_members_to_group() {
             RESOURCE_TYPE_DIGITAL_IN,
             ATTACHMENT_POINT_TYPE_PIN,
             2};
-  p.event((float *)buffer.data());
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // Adding the second member is an error
@@ -118,17 +120,17 @@ void add_too_many_members_to_group() {
             RESOURCE_TYPE_DIGITAL_IN,
             ATTACHMENT_POINT_TYPE_PIN,
             4};
-  p.event((float *)buffer.data());
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_GROUP_FULL, buffer[0]);
 }
 
 void add_group_member_with_send_end_greater_than_send_start() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // Discover the group
-  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // Adding the first member is fine
@@ -141,17 +143,17 @@ void add_group_member_with_send_end_greater_than_send_start() {
             RESOURCE_TYPE_DIGITAL_OUT,
             ATTACHMENT_POINT_TYPE_PIN,
             2};
-  p.event((float *)buffer.data());
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_GENERIC, buffer[0]);
 }
 
 void add_group_member_with_receive_end_greater_than_receive_start() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // Discover the group
-  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // Adding the first member is fine
@@ -164,26 +166,26 @@ void add_group_member_with_receive_end_greater_than_receive_start() {
             RESOURCE_TYPE_DIGITAL_IN,
             ATTACHMENT_POINT_TYPE_PIN,
             2};
-  p.event((float *)buffer.data());
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_GENERIC, buffer[0]);
 }
 
 void unknown_operation() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
-  std::array<std::uint8_t, 60> buffer{99};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{99};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_UNKNOWN_OPERATION, buffer[0]);
 }
 
 void discard() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // Discover the group
-  std::array<std::uint8_t, 60> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // Adding the first member is fine
@@ -196,27 +198,27 @@ void discard() {
             RESOURCE_TYPE_DIGITAL_IN,
             ATTACHMENT_POINT_TYPE_PIN,
             2};
-  p.event((float *)buffer.data());
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // Discover a resource
   buffer = {OPERATION_DISCOVERY_ID, 3, RESOURCE_TYPE_DIGITAL_IN, ATTACHMENT_POINT_TYPE_PIN, 18};
-  p.event((float *)buffer.data());
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // Discard
   buffer = {OPERATION_DISCARD_DISCOVERY_ID};
-  p.event((float *)buffer.data());
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_DISCARD_COMPLETE, buffer[0]);
 }
 
 void discard_with_empty_server() {
-  MockSimplePacketComs coms;
-  DiscoveryPacket p(&coms);
+  auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
+  DiscoveryPacket p(coms);
 
   // Discard
-  std::array<std::uint8_t, 60> buffer{OPERATION_DISCARD_DISCOVERY_ID};
-  p.event((float *)buffer.data());
+  std::array<std::uint8_t, DEFAULT_PACKET_SIZE> buffer{OPERATION_DISCARD_DISCOVERY_ID};
+  p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_DISCARD_COMPLETE, buffer[0]);
 }
 

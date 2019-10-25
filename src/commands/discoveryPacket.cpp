@@ -33,36 +33,33 @@
 #include "resource/teensyServoResource.h"
 #endif
 
-// User function to be called when a packet comes in
-// Buffer contains data from the packet coming in at the start of the function
-// User data is written into the buffer to send it back
-void DiscoveryPacket::event(float *buffer) {
-  std::uint8_t *buf = (std::uint8_t *)buffer;
-
+std::int32_t DiscoveryPacket::event(std::uint8_t *payload) {
 #if defined(DEBUG_DISCOVERY)
   Serial.println("Got ");
-  for (int i = 0; i < 60; i++) {
-    Serial.print(buf[i]);
+  for (int i = 0; i < PAYLOAD_LENGTH; i++) {
+    Serial.print(payload[i]);
     Serial.print(", ");
   }
   Serial.println();
 #endif
 
-  parseGeneralDiscoveryPacket(buf);
+  parseGeneralDiscoveryPacket(payload);
 
 #if defined(DEBUG_DISCOVERY)
   Serial.println("Sending ");
-  for (int i = 0; i < 60; i++) {
-    Serial.print(buf[i]);
+  for (int i = 0; i < PAYLOAD_LENGTH; i++) {
+    Serial.print(payload[i]);
     Serial.print(", ");
   }
   Serial.println();
 #endif
+
+  return 1;
 }
 
 void DiscoveryPacket::parseGeneralDiscoveryPacket(std::uint8_t *buffer) {
   const std::uint8_t operation = buffer[0];
-  std::uint8_t *dest = (std::uint8_t *)std::calloc(PAYLOAD_LENGTH, sizeof(std::uint8_t));
+  std::uint8_t *dest = (std::uint8_t *)std::calloc(PAYLOAD_LENGTH, sizeof(buffer[0]));
 
   if (dest == nullptr) {
     // Can't allocate another buffer so we have to reuse the original buffer to send the error
@@ -121,8 +118,9 @@ void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std:
     return;
   }
 
-  groupServers.emplace(groupId, new GroupResourceServer(packetId, count));
-  coms->attach(groupServers.at(groupId));
+  std::shared_ptr<GroupResourceServer> server(new GroupResourceServer(packetId, count));
+  groupServers[groupId] = server;
+  coms->addPacket(server);
   dest[0] = STATUS_ACCEPTED;
 }
 
@@ -172,13 +170,13 @@ void DiscoveryPacket::parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer
 void DiscoveryPacket::parseDiscardDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
   // Always detach before clearing
   for (auto const &elem : resourceServers) {
-    delete coms->detach(elem->getId());
+    coms->removePacket(elem->getId());
   }
   resourceServers.clear();
 
   // Always detach before clearing
   for (auto const &elem : groupServers) {
-    delete coms->detach(elem.second->getId());
+    coms->removePacket(elem.second->getId());
   }
   groupServers.clear();
 
@@ -202,9 +200,9 @@ void DiscoveryPacket::attachResource(std::uint8_t packetId,
 
   // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
   if (resource) {
-    auto server = new ResourceServer(packetId, std::move(resource));
+    std::shared_ptr<ResourceServer> server(new ResourceServer(packetId, std::move(resource)));
     resourceServers.push_back(server);
-    coms->attach(server);
+    coms->addPacket(server);
   }
 
   dest[0] = status;

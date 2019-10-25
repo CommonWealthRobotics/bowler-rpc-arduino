@@ -18,36 +18,39 @@
 #define GROUPRESOURCESERVER_H
 
 #include "../resource/resource.h"
-#include <SimplePacketComs.h>
+#include <bowlerDeviceServerUtil.hpp>
+#include <bowlerPacket.hpp>
 #include <cstring>
 #include <memory>
 #include <vector>
 
-class GroupResourceServer : public PacketEventAbstract {
+class GroupResourceServer : public Packet {
   public:
   GroupResourceServer(std::uint8_t ipacketId, std::uint8_t inumOfMembers)
-    : PacketEventAbstract(ipacketId), spaceRemaining(inumOfMembers) {
+    : Packet(ipacketId, false), spaceRemaining(inumOfMembers) {
     resources.reserve(spaceRemaining);
   }
 
   virtual ~GroupResourceServer() {
   }
 
-  void event(float *buffer) override {
-    std::uint8_t *buf = (std::uint8_t *)buffer;
+  std::int32_t event(std::uint8_t *payload) override {
+    std::uint8_t *buf = payload;
 
     for (auto &resource : resources) {
       resource->readFromPayload(buf);
       buf = buf + resource->getReceivePayloadLength();
     }
 
-    buf = (std::uint8_t *)buffer;
+    buf = payload;
     std::memset(buf, 0, PAYLOAD_LENGTH * (sizeof buf[0]));
 
     for (auto &resource : resources) {
       resource->writeToPayload(buf);
       buf = buf + resource->getSendPayloadLength();
     }
+
+    return 1;
   }
 
   void addResource(std::unique_ptr<Resource> resource) {

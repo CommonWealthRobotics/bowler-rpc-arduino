@@ -21,8 +21,10 @@
 #include "commands/groupResourceServer.h"
 #include "commands/resourceServer.h"
 #include "resource/resource.h"
-#include <SimplePacketComs.h>
 #include <array>
+#include <bowlerComs.hpp>
+#include <bowlerDeviceServerUtil.hpp>
+#include <bowlerPacket.hpp>
 #include <map>
 #include <memory>
 #include <tuple>
@@ -57,19 +59,13 @@
 #define CASE_UNKNOWN_ATTACHMENT                                                                    \
   default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
 
-class DiscoveryPacket : public PacketEventAbstract {
+class DiscoveryPacket : public Packet {
   public:
-  DiscoveryPacket(SimplePacketComsAbstract *icoms)
-    : PacketEventAbstract(DISCOVERY_PACKET_ID), coms(icoms) {
+  DiscoveryPacket(std::shared_ptr<BowlerComs<DEFAULT_PACKET_SIZE>> icoms)
+    : Packet(DISCOVERY_PACKET_ID, true), coms(std::move(icoms)) {
   }
 
-  virtual ~DiscoveryPacket() {
-  }
-
-  // User function to be called when a packet comes in
-  // Buffer contains data from the packet coming in at the start of the function
-  // User data is written into the buffer to send it back
-  void event(float *buffer) override;
+  std::int32_t event(std::uint8_t *payload) override;
 
   protected:
   /**
@@ -149,13 +145,13 @@ class DiscoveryPacket : public PacketEventAbstract {
                std::uint8_t attachment,
                const std::uint8_t *attachmentData);
 
-  SimplePacketComsAbstract *coms;
+  std::shared_ptr<BowlerComs<DEFAULT_PACKET_SIZE>> coms;
 
   // All the attached resource servers
-  std::vector<ResourceServer *> resourceServers{};
+  std::vector<std::shared_ptr<ResourceServer>> resourceServers{};
 
   // Keys are group id's (not packet id's), values are attached group resource servers
-  std::map<std::uint8_t, GroupResourceServer *> groupServers{};
+  std::map<std::uint8_t, std::shared_ptr<GroupResourceServer>> groupServers{};
 };
 
 #endif

@@ -14,33 +14,33 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with bowler-rpc-arduino.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef RESOURCESERVER_H
-#define RESOURCESERVER_H
+#ifndef MOCKBOWLERCOMS_H
+#define MOCKBOWLERCOMS_H
 
-#include "../resource/resource.h"
+#include <bowlerComs.hpp>
 #include <bowlerDeviceServerUtil.hpp>
-#include <bowlerPacket.hpp>
-#include <cstring>
-#include <memory>
 
-class ResourceServer : public Packet {
+class MockBowlerServer : public BowlerServer<DEFAULT_PACKET_SIZE> {
   public:
-  ResourceServer(std::uint8_t ipacketId, std::unique_ptr<Resource> iresource)
-    : Packet(ipacketId, false), resource(std::move(iresource)) {
-  }
-
-  virtual ~ResourceServer() {
-  }
-
-  std::int32_t event(std::uint8_t *payload) override {
-    resource->readFromPayload(payload);
-    std::memset(payload, 0, PAYLOAD_LENGTH * (sizeof payload[0]));
-    resource->writeToPayload(payload);
+  std::int32_t write(std::array<std::uint8_t, DEFAULT_PACKET_SIZE> ipayload) override {
     return 1;
   }
 
-  protected:
-  std::unique_ptr<Resource> resource;
+  std::int32_t read(std::array<std::uint8_t, DEFAULT_PACKET_SIZE> &ipayload) override {
+    return 1;
+  }
+
+  std::int32_t isDataAvailable(bool &iavailable) override {
+    iavailable = true;
+    return 1;
+  }
+};
+
+class MockBowlerComs : public BowlerComs<DEFAULT_PACKET_SIZE> {
+  public:
+  MockBowlerComs()
+    : BowlerComs<DEFAULT_PACKET_SIZE>(std::unique_ptr<MockBowlerServer>(new MockBowlerServer())) {
+  }
 };
 
 #endif
