@@ -22,7 +22,7 @@
 #include <Arduino.h>
 #include <cstring>
 
-namespace bowler {
+namespace bowlerrpc {
 class DigitalInResource : public Resource {
   public:
   std::uint8_t initialize(std::uint8_t resource,
@@ -68,6 +68,6 @@ static std::uint8_t validateDigitalInAttachmentData(const std::uint8_t *attachme
   }
 #endif
 }
-} // namespace bowler
+} // namespace bowlerrpc
 
 #endif

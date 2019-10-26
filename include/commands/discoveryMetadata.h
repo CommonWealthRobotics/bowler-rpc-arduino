@@ -19,7 +19,7 @@
 
 #include <cstdint>
 
-namespace bowler {
+namespace bowlerrpc {
 const std::uint8_t DISCOVERY_PACKET_ID = 1;
 const std::uint32_t PAYLOAD_LENGTH = 61;
 const std::uint32_t ATTACHMENT_DATA_LENGTH = 56;
@@ -59,6 +59,6 @@ const std::uint8_t ATTACHMENT_POINT_TYPE_PIN_GROUP = 2;
 const std::uint8_t ATTACHMENT_POINT_TYPE_USB_PORT = 3;
 const std::uint8_t ATTACHMENT_POINT_TYPE_PWM_PIN = 4;
 const std::uint8_t ATTACHMENT_POINT_TYPE_NONE = 5;
-} // namespace bowler
+} // namespace bowlerrpc
 
 #endif

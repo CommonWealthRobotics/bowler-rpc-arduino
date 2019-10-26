@@ -25,7 +25,7 @@
 #include <cstring>
 #include <memory>
 
-namespace bowler {
+namespace bowlerrpc {
 class ServoResource : public Resource {
   public:
   virtual ~ServoResource() {
@@ -89,7 +89,7 @@ static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentDa
     return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
   }
 }
-} // namespace bowler
+} // namespace bowlerrpc
 
 #endif
 #endif

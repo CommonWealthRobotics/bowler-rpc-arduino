@@ -30,7 +30,7 @@
 #include <tuple>
 #include <vector>
 
-namespace bowler {
+namespace bowlerrpc {
 /**
  * Handles validating a resource type by name. If the resource type is valid, a new resource is
  * created, initialized, and returned. Else, an error is returned.
@@ -60,9 +60,10 @@ namespace bowler {
 #define CASE_UNKNOWN_ATTACHMENT                                                                    \
   default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
 
-class DiscoveryPacket : public Packet {
+class DiscoveryPacket : public bowlerserver::Packet {
   public:
-  DiscoveryPacket(std::shared_ptr<BowlerComs<DEFAULT_PACKET_SIZE>> icoms)
+  DiscoveryPacket(
+    std::shared_ptr<bowlerserver::BowlerComs<bowlerserver::DEFAULT_PACKET_SIZE>> icoms)
     : Packet(DISCOVERY_PACKET_ID, true), coms(std::move(icoms)) {
   }
 
@@ -146,7 +147,7 @@ class DiscoveryPacket : public Packet {
                std::uint8_t attachment,
                const std::uint8_t *attachmentData);
 
-  std::shared_ptr<BowlerComs<DEFAULT_PACKET_SIZE>> coms;
+  std::shared_ptr<bowlerserver::BowlerComs<bowlerserver::DEFAULT_PACKET_SIZE>> coms;
 
   // All the attached resource servers
   std::vector<std::shared_ptr<ResourceServer>> resourceServers{};
@@ -154,6 +155,6 @@ class DiscoveryPacket : public Packet {
   // Keys are group id's (not packet id's), values are attached group resource servers
   std::map<std::uint8_t, std::shared_ptr<GroupResourceServer>> groupServers{};
 };
-} // namespace bowler
+} // namespace bowlerrpc
 
 #endif

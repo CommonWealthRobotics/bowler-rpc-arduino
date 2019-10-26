@@ -19,15 +19,19 @@
 
 #include <bowlerComs.hpp>
 #include <bowlerDeviceServerUtil.hpp>
+#include <bowlerServer.hpp>
+#include <defaultBowlerComs.hpp>
 
-namespace bowler {
-class MockBowlerServer : public BowlerServer<DEFAULT_PACKET_SIZE> {
+namespace bowlerrpc {
+class MockBowlerServer : public bowlerserver::BowlerServer<bowlerserver::DEFAULT_PACKET_SIZE> {
   public:
-  std::int32_t write(std::array<std::uint8_t, DEFAULT_PACKET_SIZE> ipayload) override {
+  std::int32_t
+  write(std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> ipayload) override {
     return 1;
   }
 
-  std::int32_t read(std::array<std::uint8_t, DEFAULT_PACKET_SIZE> &ipayload) override {
+  std::int32_t
+  read(std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> &ipayload) override {
     return 1;
   }
 
@@ -37,12 +41,13 @@ class MockBowlerServer : public BowlerServer<DEFAULT_PACKET_SIZE> {
   }
 };
 
-class MockBowlerComs : public BowlerComs<DEFAULT_PACKET_SIZE> {
+class MockBowlerComs : public bowlerserver::DefaultBowlerComs<bowlerserver::DEFAULT_PACKET_SIZE> {
   public:
   MockBowlerComs()
-    : BowlerComs<DEFAULT_PACKET_SIZE>(std::unique_ptr<MockBowlerServer>(new MockBowlerServer())) {
+    : DefaultBowlerComs<bowlerserver::DEFAULT_PACKET_SIZE>(
+        std::unique_ptr<MockBowlerServer>(new MockBowlerServer())) {
   }
 };
-} // namespace bowler
+} // namespace bowlerrpc
 
 #endif

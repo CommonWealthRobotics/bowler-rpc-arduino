@@ -19,7 +19,7 @@
 
 #include <SimplePacketComs.h>
 
-namespace bowler {
+namespace bowlerrpc {
 /**
  * A mock SimplePacketComs that does not receive or send packets.
  */
@@ -36,6 +36,6 @@ class MockSimplePacketComs : public SimplePacketComsAbstract {
     return 0;
   }
 };
-} // namespace bowler
+} // namespace bowlerrpc
 
 #endif

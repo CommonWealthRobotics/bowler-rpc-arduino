@@ -24,8 +24,8 @@
 #include <memory>
 #include <vector>
 
-namespace bowler {
-class GroupResourceServer : public Packet {
+namespace bowlerrpc {
+class GroupResourceServer : public bowlerserver::Packet {
   public:
   GroupResourceServer(std::uint8_t ipacketId, std::uint8_t inumOfMembers)
     : Packet(ipacketId, false), spaceRemaining(inumOfMembers) {
@@ -67,6 +67,6 @@ class GroupResourceServer : public Packet {
   std::vector<std::unique_ptr<Resource>> resources{};
   std::uint8_t spaceRemaining{0};
 };
-} // namespace bowler
+} // namespace bowlerrpc
 
 #endif

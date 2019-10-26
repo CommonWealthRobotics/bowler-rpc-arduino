@@ -33,7 +33,7 @@
 #include "resource/teensyServoResource.h"
 #endif
 
-namespace bowler {
+namespace bowlerrpc {
 std::int32_t DiscoveryPacket::event(std::uint8_t *payload) {
 #if defined(DEBUG_DISCOVERY)
   Serial.println("Got ");
@@ -259,4 +259,4 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
   default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_RESOURCE); }
   }
 }
-} // namespace bowler
+} // namespace bowlerrpc
