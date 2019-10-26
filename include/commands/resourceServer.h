@@ -23,6 +23,7 @@
 #include <cstring>
 #include <memory>
 
+namespace bowler {
 class ResourceServer : public Packet {
   public:
   ResourceServer(std::uint8_t ipacketId, std::unique_ptr<Resource> iresource)
@@ -42,5 +43,6 @@ class ResourceServer : public Packet {
   protected:
   std::unique_ptr<Resource> resource;
 };
+} // namespace bowler
 
 #endif

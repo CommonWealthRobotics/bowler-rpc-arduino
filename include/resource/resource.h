@@ -21,6 +21,7 @@
 #include <array>
 #include <cstdint>
 
+namespace bowler {
 class Resource {
   public:
   /**
@@ -95,5 +96,6 @@ class Resource {
   std::uint8_t sendLength{60};
   std::uint8_t receiveLength{60};
 };
+} // namespace bowler
 
 #endif

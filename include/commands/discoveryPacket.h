@@ -30,6 +30,7 @@
 #include <tuple>
 #include <vector>
 
+namespace bowler {
 /**
  * Handles validating a resource type by name. If the resource type is valid, a new resource is
  * created, initialized, and returned. Else, an error is returned.
@@ -153,5 +154,6 @@ class DiscoveryPacket : public Packet {
   // Keys are group id's (not packet id's), values are attached group resource servers
   std::map<std::uint8_t, std::shared_ptr<GroupResourceServer>> groupServers{};
 };
+} // namespace bowler
 
 #endif

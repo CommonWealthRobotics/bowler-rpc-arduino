@@ -20,6 +20,7 @@
 #include <bowlerComs.hpp>
 #include <bowlerDeviceServerUtil.hpp>
 
+namespace bowler {
 class MockBowlerServer : public BowlerServer<DEFAULT_PACKET_SIZE> {
   public:
   std::int32_t write(std::array<std::uint8_t, DEFAULT_PACKET_SIZE> ipayload) override {
@@ -42,5 +43,6 @@ class MockBowlerComs : public BowlerComs<DEFAULT_PACKET_SIZE> {
     : BowlerComs<DEFAULT_PACKET_SIZE>(std::unique_ptr<MockBowlerServer>(new MockBowlerServer())) {
   }
 };
+} // namespace bowler
 
 #endif

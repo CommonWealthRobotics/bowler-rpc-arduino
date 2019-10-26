@@ -20,6 +20,8 @@
 #include <bowlerDeviceServerUtil.hpp>
 #include <unity.h>
 
+using namespace bowler;
+
 void discover_with_packetid_equal_to_discovery_packetid() {
   auto coms = std::shared_ptr<MockBowlerComs>(new MockBowlerComs());
   DiscoveryPacket p(coms);

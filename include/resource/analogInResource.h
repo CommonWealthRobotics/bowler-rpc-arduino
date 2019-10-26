@@ -22,6 +22,7 @@
 #include <Arduino.h>
 #include <cstring>
 
+namespace bowler {
 class AnalogInResource : public Resource {
   public:
   std::uint8_t initialize(std::uint8_t resource,
@@ -69,5 +70,6 @@ static std::uint8_t validateAnalogInAttachmentData(const std::uint8_t *attachmen
   }
 #endif
 }
+} // namespace bowler
 
 #endif
