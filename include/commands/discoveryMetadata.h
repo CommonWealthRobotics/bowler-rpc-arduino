@@ -20,7 +20,7 @@
 #include <cstdint>
 
 namespace bowlerrpc {
-const std::uint8_t DISCOVERY_PACKET_ID = 1;
+const std::uint8_t DISCOVERY_PACKET_ID = 2;
 const std::uint32_t PAYLOAD_LENGTH = 61;
 const std::uint32_t ATTACHMENT_DATA_LENGTH = 56;
 

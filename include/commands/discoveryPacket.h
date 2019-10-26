@@ -30,7 +30,6 @@
 #include <tuple>
 #include <vector>
 
-namespace bowlerrpc {
 /**
  * Handles validating a resource type by name. If the resource type is valid, a new resource is
  * created, initialized, and returned. Else, an error is returned.
@@ -40,14 +39,14 @@ namespace bowlerrpc {
  */
 #define VALIDATE_AND_RETURN(RESOURCE_TYPE_NAME)                                                    \
   std::uint8_t validationStatus = validate##RESOURCE_TYPE_NAME##AttachmentData(attachmentData);    \
-  if (validationStatus != STATUS_ACCEPTED) {                                                       \
+  if (validationStatus != bowlerrpc::STATUS_ACCEPTED) {                                            \
     return std::make_tuple(nullptr, validationStatus);                                             \
   } else {                                                                                         \
     auto resource =                                                                                \
       std::unique_ptr<RESOURCE_TYPE_NAME##Resource>(new RESOURCE_TYPE_NAME##Resource());           \
     std::uint8_t initializeStatus =                                                                \
       resource->initialize(resourceType, attachment, attachmentData);                              \
-    if (initializeStatus == STATUS_ACCEPTED) {                                                     \
+    if (initializeStatus == bowlerrpc::STATUS_ACCEPTED) {                                          \
       return std::make_tuple(std::move(resource), initializeStatus);                               \
     } else {                                                                                       \
       return std::make_tuple(nullptr, initializeStatus);                                           \
@@ -58,8 +57,9 @@ namespace bowlerrpc {
  * Handles the case of an unknown attachment (by returning an error).
  */
 #define CASE_UNKNOWN_ATTACHMENT                                                                    \
-  default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+  default: { return std::make_tuple(nullptr, bowlerrpc::STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
 
+namespace bowlerrpc {
 class DiscoveryPacket : public bowlerserver::Packet {
   public:
   DiscoveryPacket(
