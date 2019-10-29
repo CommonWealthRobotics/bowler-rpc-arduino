@@ -53,7 +53,7 @@ class ServoResource : public Resource {
   }
 
   void readFromPayload(std::uint8_t *buffer) override {
-    servo->write(buffer[0]);
+    servo->write(buffer[0] << 8 | buffer[1]);
   }
 
   void writeToPayload(std::uint8_t *buffer) override {
