@@ -120,21 +120,6 @@ class DiscoveryPacket : public bowlerserver::Packet {
   void parseDiscardDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest);
 
   /**
-   * Attaches a resource.
-   *
-   * @param packetId The new packet ID.
-   * @param resourceType The resource type.
-   * @param attachment The attachment point type.
-   * @param attachmentData Any attachment data.
-   * @param dest The destination array to write the status and payload to.
-   */
-  virtual void attachResource(std::uint8_t packetId,
-                              std::uint8_t resourceType,
-                              std::uint8_t attachment,
-                              const std::uint8_t *attachmentData,
-                              std::uint8_t *dest);
-
-  /**
    * Makes a resource.
    *
    * @param resourceType The resource type.

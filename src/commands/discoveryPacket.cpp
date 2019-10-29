@@ -101,7 +101,28 @@ void DiscoveryPacket::parseDiscoveryPacket(const std::uint8_t *buffer, std::uint
   std::uint8_t attachment = buffer[3];
   const std::uint8_t *attachmentData = buffer + 4;
 
-  attachResource(packetId, resourceType, attachment, attachmentData, dest);
+  if (packetId == DISCOVERY_PACKET_ID) {
+    dest[0] = STATUS_REJECTED_INVALID_PACKET_ID;
+    return;
+  }
+
+  std::unique_ptr<Resource> resource;
+  std::uint8_t status;
+  std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
+
+  // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
+  if (resource) {
+    std::shared_ptr<ResourceServer> server(new ResourceServer(packetId, std::move(resource)));
+    resourceServers.push_back(server);
+    auto error = coms->addPacket(server);
+    if (error == bowlerserver::BOWLER_ERROR) {
+      BOWLER_LOG("Error adding ResourceServer packet: %u %s", errno, strerror(errno));
+      dest[0] = STATUS_REJECTED_GENERIC;
+      return;
+    }
+  }
+
+  dest[0] = status;
 }
 
 void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
@@ -121,7 +142,13 @@ void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std:
 
   std::shared_ptr<GroupResourceServer> server(new GroupResourceServer(packetId, count));
   groupServers[groupId] = server;
-  coms->addPacket(server);
+  auto error = coms->addPacket(server);
+  if (error == bowlerserver::BOWLER_ERROR) {
+    BOWLER_LOG("Error adding GroupResourceServer packet: %u %s", errno, strerror(errno));
+    dest[0] = STATUS_REJECTED_GENERIC;
+    return;
+  }
+
   dest[0] = STATUS_ACCEPTED;
 }
 
@@ -183,30 +210,6 @@ void DiscoveryPacket::parseDiscardDiscoveryPacket(const std::uint8_t *buffer, st
 
   // Nothing else to do
   dest[0] = STATUS_DISCARD_COMPLETE;
-}
-
-void DiscoveryPacket::attachResource(std::uint8_t packetId,
-                                     std::uint8_t resourceType,
-                                     std::uint8_t attachment,
-                                     const std::uint8_t *attachmentData,
-                                     std::uint8_t *dest) {
-  if (packetId == DISCOVERY_PACKET_ID) {
-    dest[0] = STATUS_REJECTED_INVALID_PACKET_ID;
-    return;
-  }
-
-  std::unique_ptr<Resource> resource;
-  std::uint8_t status;
-  std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
-
-  // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
-  if (resource) {
-    std::shared_ptr<ResourceServer> server(new ResourceServer(packetId, std::move(resource)));
-    resourceServers.push_back(server);
-    coms->addPacket(server);
-  }
-
-  dest[0] = status;
 }
 
 std::tuple<std::unique_ptr<Resource>, std::uint8_t>
