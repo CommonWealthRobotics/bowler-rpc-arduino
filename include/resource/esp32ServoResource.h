@@ -76,7 +76,7 @@ static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentDa
   std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
   std::uint8_t timerWidth = attachmentData[5];
 
-  if (pin == 4 || pin == 5 || (pin >= 12 && pin <= 19) || (pin >= 21 && pin <= 23) ||
+  if (pin == 2 || pin == 4 || pin == 5 || (pin >= 12 && pin <= 19) || (pin >= 21 && pin <= 23) ||
       (pin >= 25 && pin <= 27) || pin == 32 || pin == 33) {
     return STATUS_ACCEPTED;
   } else if (minUsLow < MIN_PULSE_WIDTH || minUsLow > MAX_PULSE_WIDTH) {
