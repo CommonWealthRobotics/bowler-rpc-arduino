@@ -54,10 +54,10 @@
   }
 
 /**
- * Handles the case of an unknown attachment (by returning an error).
+ * Handles the case of an invalid attachment (by returning an error).
  */
-#define CASE_UNKNOWN_ATTACHMENT                                                                    \
-  default: { return std::make_tuple(nullptr, bowlerrpc::STATUS_REJECTED_UNKNOWN_ATTACHMENT); }
+#define CASE_INVALID_ATTACHMENT                                                                    \
+  default: { return std::make_tuple(nullptr, bowlerrpc::STATUS_REJECTED_INVALID_ATTACHMENT); }
 
 namespace bowlerrpc {
 class DiscoveryPacket : public bowlerserver::Packet {

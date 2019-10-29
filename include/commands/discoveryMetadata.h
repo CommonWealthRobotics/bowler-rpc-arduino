@@ -59,6 +59,8 @@ const std::uint8_t ATTACHMENT_POINT_TYPE_PIN_GROUP = 2;
 const std::uint8_t ATTACHMENT_POINT_TYPE_USB_PORT = 3;
 const std::uint8_t ATTACHMENT_POINT_TYPE_PWM_PIN = 4;
 const std::uint8_t ATTACHMENT_POINT_TYPE_NONE = 5;
+const std::uint8_t ATTACHMENT_POINT_MINIMUM = ATTACHMENT_POINT_TYPE_PIN;
+const std::uint8_t ATTACHMENT_POINT_MAXIMUM = ATTACHMENT_POINT_TYPE_NONE;
 } // namespace bowlerrpc
 
 #endif

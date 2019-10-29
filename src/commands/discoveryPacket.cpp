@@ -213,6 +213,10 @@ std::tuple<std::unique_ptr<Resource>, std::uint8_t>
 DiscoveryPacket::makeResource(std::uint8_t resourceType,
                               std::uint8_t attachment,
                               const std::uint8_t *attachmentData) {
+  if (attachment < ATTACHMENT_POINT_MINIMUM || attachment > ATTACHMENT_POINT_MAXIMUM) {
+    return std::make_tuple(nullptr, bowlerrpc::STATUS_REJECTED_UNKNOWN_ATTACHMENT);
+  }
+
   switch (resourceType) {
   case RESOURCE_TYPE_ANALOG_IN: {
     switch (attachment) {
@@ -220,7 +224,7 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
       VALIDATE_AND_RETURN(AnalogIn)
     }
 
-      CASE_UNKNOWN_ATTACHMENT
+      CASE_INVALID_ATTACHMENT
     }
   }
 
@@ -230,7 +234,7 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
       VALIDATE_AND_RETURN(DigitalIn)
     }
 
-      CASE_UNKNOWN_ATTACHMENT
+      CASE_INVALID_ATTACHMENT
     }
   }
 
@@ -240,7 +244,7 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
       VALIDATE_AND_RETURN(DigitalOut)
     }
 
-      CASE_UNKNOWN_ATTACHMENT
+      CASE_INVALID_ATTACHMENT
     }
   }
 
@@ -251,7 +255,7 @@ DiscoveryPacket::makeResource(std::uint8_t resourceType,
       VALIDATE_AND_RETURN(Servo)
     }
 
-      CASE_UNKNOWN_ATTACHMENT
+      CASE_INVALID_ATTACHMENT
     }
   }
 
