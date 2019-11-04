@@ -28,6 +28,9 @@
 namespace bowlerrpc {
 class ServoResource : public Resource {
   public:
+  ServoResource(const bool iisReliable) : Resource(iisReliable) {
+  }
+
   virtual ~ServoResource() {
     // servo.detach();
     // TODO: Figure out how to implement detach (only defined for __AVR__)

@@ -99,7 +99,18 @@ void DiscoveryPacket::parseDiscoveryPacket(const std::uint8_t *buffer, std::uint
   std::uint8_t packetId = buffer[1];
   std::uint8_t resourceType = buffer[2];
   std::uint8_t attachment = buffer[3];
-  const std::uint8_t *attachmentData = buffer + 4;
+
+  bool isReliable;
+  if (buffer[4] == RELIABLE_TRANSPORT) {
+    isReliable = true;
+  } else if (buffer[4] == UNRELIABLE_TRANSPORT) {
+    isReliable = false;
+  } else {
+    dest[0] = STATUS_REJECTED_INVALID_ATTACHMENT;
+    return;
+  }
+
+  const std::uint8_t *attachmentData = buffer + 5;
 
   if (packetId == DISCOVERY_PACKET_ID) {
     dest[0] = STATUS_REJECTED_INVALID_PACKET_ID;
@@ -108,7 +119,7 @@ void DiscoveryPacket::parseDiscoveryPacket(const std::uint8_t *buffer, std::uint
 
   std::unique_ptr<Resource> resource;
   std::uint8_t status;
-  std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
+  std::tie(resource, status) = makeResource(resourceType, attachment, isReliable, attachmentData);
 
   // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
   if (resource) {
@@ -130,6 +141,16 @@ void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std:
   std::uint8_t packetId = buffer[2];
   std::uint8_t count = buffer[3];
 
+  bool isReliable;
+  if (buffer[4] == RELIABLE_TRANSPORT) {
+    isReliable = true;
+  } else if (buffer[4] == UNRELIABLE_TRANSPORT) {
+    isReliable = false;
+  } else {
+    dest[0] = STATUS_REJECTED_INVALID_ATTACHMENT;
+    return;
+  }
+
   if (groupServers.find(groupId) != groupServers.end()) {
     // Check if the group was already created
     dest[0] = STATUS_REJECTED_INVALID_GROUP_ID;
@@ -140,7 +161,7 @@ void DiscoveryPacket::parseGroupDiscoveryPacket(const std::uint8_t *buffer, std:
     return;
   }
 
-  std::shared_ptr<GroupResourceServer> server(new GroupResourceServer(packetId, count));
+  std::shared_ptr<GroupResourceServer> server(new GroupResourceServer(packetId, count, isReliable));
   groupServers[groupId] = server;
   auto error = coms->addPacket(server);
   if (error == bowlerserver::BOWLER_ERROR) {
@@ -179,7 +200,9 @@ void DiscoveryPacket::parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer
 
   std::unique_ptr<Resource> resource;
   std::uint8_t status;
-  std::tie(resource, status) = makeResource(resourceType, attachment, attachmentData);
+  // The reliable transport flag does not matter for group members because the entire group uses
+  // the same transport method, which is set at group discovery time
+  std::tie(resource, status) = makeResource(resourceType, attachment, false, attachmentData);
 
   // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
   if (resource) {
@@ -215,6 +238,7 @@ void DiscoveryPacket::parseDiscardDiscoveryPacket(const std::uint8_t *buffer, st
 std::tuple<std::unique_ptr<Resource>, std::uint8_t>
 DiscoveryPacket::makeResource(std::uint8_t resourceType,
                               std::uint8_t attachment,
+                              bool isReliable,
                               const std::uint8_t *attachmentData) {
   if (attachment < ATTACHMENT_POINT_MINIMUM || attachment > ATTACHMENT_POINT_MAXIMUM) {
     return std::make_tuple(nullptr, bowlerrpc::STATUS_REJECTED_UNKNOWN_ATTACHMENT);

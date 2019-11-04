@@ -25,6 +25,9 @@
 namespace bowlerrpc {
 class AnalogInResource : public Resource {
   public:
+  AnalogInResource(const bool iisReliable) : Resource(iisReliable) {
+  }
+
   std::uint8_t initialize(std::uint8_t resource,
                           std::uint8_t attachment,
                           const std::uint8_t *attachmentData) override {

@@ -43,7 +43,7 @@
     return std::make_tuple(nullptr, validationStatus);                                             \
   } else {                                                                                         \
     auto resource =                                                                                \
-      std::unique_ptr<RESOURCE_TYPE_NAME##Resource>(new RESOURCE_TYPE_NAME##Resource());           \
+      std::unique_ptr<RESOURCE_TYPE_NAME##Resource>(new RESOURCE_TYPE_NAME##Resource(isReliable)); \
     std::uint8_t initializeStatus =                                                                \
       resource->initialize(resourceType, attachment, attachmentData);                              \
     if (initializeStatus == bowlerrpc::STATUS_ACCEPTED) {                                          \
@@ -124,12 +124,14 @@ class DiscoveryPacket : public bowlerserver::Packet {
    *
    * @param resourceType The resource type.
    * @param attachment The attachment point type.
+   * @param isReliable Whether this resource uses reliable transport.
    * @param attachmentData Any attachment data.
    * @return The resource and a status code.
    */
   virtual std::tuple<std::unique_ptr<Resource>, std::uint8_t>
   makeResource(std::uint8_t resourceType,
                std::uint8_t attachment,
+               bool isReliable,
                const std::uint8_t *attachmentData);
 
   std::shared_ptr<bowlerserver::BowlerComs<bowlerserver::DEFAULT_PACKET_SIZE>> coms;

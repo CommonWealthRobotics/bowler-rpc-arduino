@@ -27,7 +27,7 @@ namespace bowlerrpc {
 class ResourceServer : public bowlerserver::Packet {
   public:
   ResourceServer(std::uint8_t ipacketId, std::unique_ptr<Resource> iresource)
-    : Packet(ipacketId, false), resource(std::move(iresource)) {
+    : Packet(ipacketId, iresource->isReliable()), resource(std::move(iresource)) {
   }
 
   virtual ~ResourceServer() {

@@ -27,8 +27,8 @@
 namespace bowlerrpc {
 class GroupResourceServer : public bowlerserver::Packet {
   public:
-  GroupResourceServer(std::uint8_t ipacketId, std::uint8_t inumOfMembers)
-    : Packet(ipacketId, false), spaceRemaining(inumOfMembers) {
+  GroupResourceServer(std::uint8_t ipacketId, std::uint8_t inumOfMembers, bool iisReliable)
+    : Packet(ipacketId, iisReliable), spaceRemaining(inumOfMembers) {
     resources.reserve(spaceRemaining);
   }
 

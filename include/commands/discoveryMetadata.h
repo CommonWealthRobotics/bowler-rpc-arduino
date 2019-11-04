@@ -23,6 +23,8 @@ namespace bowlerrpc {
 const std::uint8_t DISCOVERY_PACKET_ID = 2;
 const std::uint32_t PAYLOAD_LENGTH = 61;
 const std::uint32_t ATTACHMENT_DATA_LENGTH = 56;
+const std::uint8_t RELIABLE_TRANSPORT = 1;
+const std::uint8_t UNRELIABLE_TRANSPORT = 2;
 
 const std::uint8_t OPERATION_DISCOVERY_ID = 1;
 const std::uint8_t OPERATION_GROUP_DISCOVERY_ID = 2;

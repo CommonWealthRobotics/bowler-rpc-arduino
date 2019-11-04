@@ -31,6 +31,7 @@ void discover_with_packetid_equal_to_discovery_packetid() {
                                                                       DISCOVERY_PACKET_ID,
                                                                       RESOURCE_TYPE_ANALOG_IN,
                                                                       ATTACHMENT_POINT_TYPE_PIN,
+                                                                      UNRELIABLE_TRANSPORT,
                                                                       1};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_INVALID_PACKET_ID, buffer[0]);
@@ -42,7 +43,7 @@ void discover_group_with_packetid_equal_to_discovery_packetid() {
 
   // Can't add a new group with the discovery packet id
   std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> buffer{
-    OPERATION_GROUP_DISCOVERY_ID, DISCOVERY_PACKET_ID, 1};
+    OPERATION_GROUP_DISCOVERY_ID, 1, DISCOVERY_PACKET_ID, 1, UNRELIABLE_TRANSPORT};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_INVALID_PACKET_ID, buffer[0]);
 }
@@ -53,12 +54,12 @@ void discover_group_twice() {
 
   // The first time the group is discovered, it should be accepted
   std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> buffer{
-    OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+    OPERATION_GROUP_DISCOVERY_ID, 1, 3, 1, UNRELIABLE_TRANSPORT};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // The second time the group is discovered, it should be rejected
-  buffer = {OPERATION_GROUP_DISCOVERY_ID, 1, 3, 1};
+  buffer = {OPERATION_GROUP_DISCOVERY_ID, 1, 4, 1, UNRELIABLE_TRANSPORT};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_REJECTED_INVALID_GROUP_ID, buffer[0]);
 }
@@ -69,7 +70,7 @@ void discover_group_with_zero_members() {
 
   // A group with a count of zero should be accepted
   std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> buffer{
-    OPERATION_GROUP_DISCOVERY_ID, 1, 2, 0};
+    OPERATION_GROUP_DISCOVERY_ID, 1, 3, 0, UNRELIABLE_TRANSPORT};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 }
@@ -99,7 +100,7 @@ void add_too_many_members_to_group() {
 
   // Discover the group
   std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> buffer{
-    OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+    OPERATION_GROUP_DISCOVERY_ID, 1, 3, 1, UNRELIABLE_TRANSPORT};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
@@ -136,7 +137,7 @@ void add_group_member_with_send_end_greater_than_send_start() {
 
   // Discover the group
   std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> buffer{
-    OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+    OPERATION_GROUP_DISCOVERY_ID, 1, 3, 1, UNRELIABLE_TRANSPORT};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
@@ -160,7 +161,7 @@ void add_group_member_with_receive_end_greater_than_receive_start() {
 
   // Discover the group
   std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> buffer{
-    OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+    OPERATION_GROUP_DISCOVERY_ID, 1, 3, 1, UNRELIABLE_TRANSPORT};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
@@ -193,7 +194,7 @@ void discard() {
 
   // Discover the group
   std::array<std::uint8_t, bowlerserver::DEFAULT_PACKET_SIZE> buffer{
-    OPERATION_GROUP_DISCOVERY_ID, 1, 2, 1};
+    OPERATION_GROUP_DISCOVERY_ID, 1, 3, 1, UNRELIABLE_TRANSPORT};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
@@ -211,7 +212,12 @@ void discard() {
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 
   // Discover a resource
-  buffer = {OPERATION_DISCOVERY_ID, 3, RESOURCE_TYPE_DIGITAL_IN, ATTACHMENT_POINT_TYPE_PIN, 18};
+  buffer = {OPERATION_DISCOVERY_ID,
+            4,
+            RESOURCE_TYPE_DIGITAL_IN,
+            ATTACHMENT_POINT_TYPE_PIN,
+            UNRELIABLE_TRANSPORT,
+            18};
   p.event(buffer.data());
   TEST_ASSERT_EQUAL(STATUS_ACCEPTED, buffer[0]);
 

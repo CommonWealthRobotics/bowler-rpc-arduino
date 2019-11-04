@@ -31,7 +31,8 @@ class Resource {
    * @param attachment The attachment point type.
    * @param attachmentData Any attachment data.
    */
-  Resource() = default;
+  Resource(const bool iisReliable) : reliable(iisReliable) {
+  }
 
   /**
    * This should disconnect the resource, if applicable.
@@ -92,9 +93,17 @@ class Resource {
     return sendLength;
   }
 
+  /**
+   * @return `true` is this resource uses reliable transport.
+   */
+  bool isReliable() const {
+    return reliable;
+  }
+
   protected:
   std::uint8_t sendLength{60};
   std::uint8_t receiveLength{60};
+  bool reliable{false};
 };
 } // namespace bowlerrpc
 
