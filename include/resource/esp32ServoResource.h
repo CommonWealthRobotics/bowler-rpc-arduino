@@ -46,6 +46,9 @@ class ServoResource : public Resource {
       std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
       std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
       std::uint8_t timerWidth = attachmentData[5];
+      std::uint32_t periodHertz = (attachmentData[6] << 24) | (attachmentData[7] << 16) |
+                                  (attachmentData[8] << 8) | attachmentData[9];
+      servo->setPeriodHertz(periodHertz);
       servo->setTimerWidth(timerWidth);
       servo->attach(pin, minUsLow, minUsHigh);
     } else {
@@ -76,15 +79,16 @@ class ServoResource : public Resource {
 static std::uint8_t validateServoAttachmentData(const std::uint8_t *attachmentData) {
   std::uint8_t pin = attachmentData[0];
   std::uint16_t minUsLow = (attachmentData[1] << 8) | attachmentData[2];
-  std::uint16_t minUsHigh = (attachmentData[3] << 8) | attachmentData[4];
+  std::uint16_t maxUsHigh = (attachmentData[3] << 8) | attachmentData[4];
   std::uint8_t timerWidth = attachmentData[5];
+  std::uint8_t periodHertz = (attachmentData[6] << 8) | attachmentData[7];
 
   if (pin == 2 || pin == 4 || pin == 5 || (pin >= 12 && pin <= 19) || (pin >= 21 && pin <= 23) ||
       (pin >= 25 && pin <= 27) || pin == 32 || pin == 33) {
     return STATUS_ACCEPTED;
   } else if (minUsLow < MIN_PULSE_WIDTH || minUsLow > MAX_PULSE_WIDTH) {
     return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
-  } else if (minUsHigh < MIN_PULSE_WIDTH || minUsHigh > MAX_PULSE_WIDTH) {
+  } else if (maxUsHigh < MIN_PULSE_WIDTH || maxUsHigh > MAX_PULSE_WIDTH) {
     return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
   } else if (timerWidth < 16 || timerWidth > 20) {
     return STATUS_REJECTED_INVALID_ATTACHMENT_DATA;
