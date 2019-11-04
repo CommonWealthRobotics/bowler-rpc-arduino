@@ -18,17 +18,35 @@
 #define DISCOVERYPACKET_H
 
 #include "commands/discoveryMetadata.h"
+#include "commands/discoveryPacket.h"
 #include "commands/groupResourceServer.h"
 #include "commands/resourceServer.h"
+#include "resource/analogInResource.h"
+#include "resource/digitalInResource.h"
+#include "resource/digitalOutResource.h"
 #include "resource/resource.h"
+#include <Arduino.h>
+#include <algorithm>
 #include <array>
 #include <bowlerComs.hpp>
 #include <bowlerDeviceServerUtil.hpp>
 #include <bowlerPacket.hpp>
+#include <cstdlib>
+#include <cstring>
 #include <map>
 #include <memory>
 #include <tuple>
 #include <vector>
+
+#if defined(PLATFORM_ESP32)
+#include "resource/esp32ServoResource.h"
+#elif defined(PLATFORM_TEENSY)
+#include "resource/teensyServoResource.h"
+#endif
+
+#if defined(USE_WIFI)
+#include <WiFi.h> // This is needed so that PlatformIO finds the right WiFi implementation
+#endif
 
 /**
  * Handles validating a resource type by name. If the resource type is valid, a new resource is
@@ -67,7 +85,29 @@ class DiscoveryPacket : public bowlerserver::Packet {
     : Packet(DISCOVERY_PACKET_ID, true), coms(std::move(icoms)) {
   }
 
-  std::int32_t event(std::uint8_t *payload) override;
+  std::int32_t event(std::uint8_t *payload) override {
+#if defined(DEBUG_DISCOVERY)
+    Serial.println("Got ");
+    for (int i = 0; i < PAYLOAD_LENGTH; i++) {
+      Serial.print(payload[i]);
+      Serial.print(", ");
+    }
+    Serial.println();
+#endif
+
+    parseGeneralDiscoveryPacket(payload);
+
+#if defined(DEBUG_DISCOVERY)
+    Serial.println("Sending ");
+    for (int i = 0; i < PAYLOAD_LENGTH; i++) {
+      Serial.print(payload[i]);
+      Serial.print(", ");
+    }
+    Serial.println();
+#endif
+
+    return 1;
+  }
 
   protected:
   /**
@@ -77,7 +117,42 @@ class DiscoveryPacket : public bowlerserver::Packet {
    *
    * @param buffer The packet payload.
    */
-  void parseGeneralDiscoveryPacket(std::uint8_t *buffer);
+  void parseGeneralDiscoveryPacket(std::uint8_t *buffer) {
+    const std::uint8_t operation = buffer[0];
+    std::uint8_t *dest = (std::uint8_t *)std::calloc(PAYLOAD_LENGTH, sizeof(buffer[0]));
+
+    if (dest == nullptr) {
+      // Can't allocate another buffer so we have to reuse the original buffer to send the error
+      std::memset(buffer, 0, PAYLOAD_LENGTH * sizeof(buffer[0]));
+      buffer[0] = STATUS_REJECTED_GENERIC;
+      return;
+    }
+
+    switch (operation) {
+    case OPERATION_DISCOVERY_ID:
+      parseDiscoveryPacket(buffer, dest);
+      break;
+
+    case OPERATION_GROUP_DISCOVERY_ID:
+      parseGroupDiscoveryPacket(buffer, dest);
+      break;
+
+    case OPERATION_GROUP_MEMBER_DISCOVERY_ID:
+      parseGroupMemberDiscoveryPacket(buffer, dest);
+      break;
+
+    case OPERATION_DISCARD_DISCOVERY_ID:
+      parseDiscardDiscoveryPacket(buffer, dest);
+      break;
+
+    // Operations that haven't already been handled are unknown
+    default:
+      dest[0] = STATUS_REJECTED_UNKNOWN_OPERATION;
+      break;
+    }
+
+    std::memcpy(buffer, dest, PAYLOAD_LENGTH * sizeof(buffer[0]));
+  }
 
   /**
    * Parses a discovery packet and writes the response.
@@ -87,7 +162,46 @@ class DiscoveryPacket : public bowlerserver::Packet {
    * @param buffer The packet payload.
    * @param dest The reply buffer.
    */
-  void parseDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest);
+  void parseDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
+    const std::uint8_t packetId = buffer[1];
+    const std::uint8_t resourceType = buffer[2];
+    const std::uint8_t attachment = buffer[3];
+
+    bool isReliable;
+    if (buffer[4] == RELIABLE_TRANSPORT) {
+      isReliable = true;
+    } else if (buffer[4] == UNRELIABLE_TRANSPORT) {
+      isReliable = false;
+    } else {
+      dest[0] = STATUS_REJECTED_INVALID_ATTACHMENT;
+      return;
+    }
+
+    const std::uint8_t *attachmentData = buffer + 5;
+
+    if (packetId == DISCOVERY_PACKET_ID) {
+      dest[0] = STATUS_REJECTED_INVALID_PACKET_ID;
+      return;
+    }
+
+    std::unique_ptr<Resource> resource;
+    std::uint8_t status;
+    std::tie(resource, status) = makeResource(resourceType, attachment, isReliable, attachmentData);
+
+    // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
+    if (resource) {
+      std::shared_ptr<ResourceServer> server(new ResourceServer(packetId, std::move(resource)));
+      resourceServers.push_back(server);
+      auto error = coms->addPacket(server);
+      if (error == bowlerserver::BOWLER_ERROR) {
+        BOWLER_LOG("Error adding ResourceServer packet: %u %s", errno, strerror(errno));
+        dest[0] = STATUS_REJECTED_GENERIC;
+        return;
+      }
+    }
+
+    dest[0] = status;
+  }
 
   /**
    * Parses a group discovery packet and writes the response.
@@ -97,7 +211,43 @@ class DiscoveryPacket : public bowlerserver::Packet {
    * @param buffer The packet payload.
    * @param dest The reply buffer.
    */
-  void parseGroupDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest);
+  void parseGroupDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
+    const std::uint8_t groupId = buffer[1];
+    const std::uint8_t packetId = buffer[2];
+    const std::uint8_t count = buffer[3];
+
+    bool isReliable;
+    if (buffer[4] == RELIABLE_TRANSPORT) {
+      isReliable = true;
+    } else if (buffer[4] == UNRELIABLE_TRANSPORT) {
+      isReliable = false;
+    } else {
+      dest[0] = STATUS_REJECTED_INVALID_ATTACHMENT;
+      return;
+    }
+
+    if (groupServers.find(groupId) != groupServers.end()) {
+      // Check if the group was already created
+      dest[0] = STATUS_REJECTED_INVALID_GROUP_ID;
+      return;
+    } else if (packetId == DISCOVERY_PACKET_ID) {
+      // Can't have a packet id equal to the discovery packet id
+      dest[0] = STATUS_REJECTED_INVALID_PACKET_ID;
+      return;
+    }
+
+    std::shared_ptr<GroupResourceServer> server(
+      new GroupResourceServer(packetId, count, isReliable));
+    groupServers[groupId] = server;
+    auto error = coms->addPacket(server);
+    if (error == bowlerserver::BOWLER_ERROR) {
+      BOWLER_LOG("Error adding GroupResourceServer packet: %u %s", errno, strerror(errno));
+      dest[0] = STATUS_REJECTED_GENERIC;
+      return;
+    }
+
+    dest[0] = STATUS_ACCEPTED;
+  }
 
   /**
    * Parses a group member discovery packet and writes the response.
@@ -107,7 +257,49 @@ class DiscoveryPacket : public bowlerserver::Packet {
    * @param buffer The packet payload.
    * @param dest The reply buffer.
    */
-  void parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest);
+  void parseGroupMemberDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
+    const std::uint8_t groupId = buffer[1];
+    const std::uint8_t sendStart = buffer[2];
+    const std::uint8_t sendEnd = buffer[3];
+    const std::uint8_t receiveStart = buffer[4];
+    const std::uint8_t receiveEnd = buffer[5];
+    const std::uint8_t resourceType = buffer[6];
+    const std::uint8_t attachment = buffer[7];
+    const std::uint8_t *attachmentData = buffer + 8;
+
+    if (groupServers.find(groupId) == groupServers.end()) {
+      // Check that the group exists first
+      dest[0] = STATUS_REJECTED_INVALID_GROUP_ID;
+      return;
+    } else if (!groupServers.at(groupId)->hasSpaceRemaining()) {
+      // Check if the resource can be added to the group before we make it
+      dest[0] = STATUS_REJECTED_GROUP_FULL;
+      return;
+    } else if (sendStart > sendEnd || receiveStart > receiveEnd) {
+      // Check if the send or receive indices are invalid
+      dest[0] = STATUS_REJECTED_GENERIC;
+      return;
+    }
+
+    std::unique_ptr<Resource> resource;
+    std::uint8_t status;
+    // The reliable transport flag does not matter for group members because the entire group uses
+    // the same transport method, which is set at group discovery time
+    std::tie(resource, status) = makeResource(resourceType, attachment, false, attachmentData);
+
+    // Validation errors cause the `resource` to be `nullptr`. The `status` is always good.
+    if (resource) {
+      // Send length is from the PC perspective, which is our receive length
+      resource->setReceivePayloadLength(sendEnd - sendStart);
+
+      // Receive length is from the PC perspective, which is our send length
+      resource->setSendPayloadLength(receiveEnd - receiveStart);
+
+      groupServers.at(groupId)->addResource(std::move(resource));
+    }
+
+    dest[0] = status;
+  }
 
   /**
    * Parses a discard discovery packet and writes the response.
@@ -117,7 +309,22 @@ class DiscoveryPacket : public bowlerserver::Packet {
    * @param buffer The packet payload.
    * @param dest The reply buffer.
    */
-  void parseDiscardDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest);
+  void parseDiscardDiscoveryPacket(const std::uint8_t *buffer, std::uint8_t *dest) {
+    // Always detach before clearing
+    for (auto const &elem : resourceServers) {
+      coms->removePacket(elem->getId());
+    }
+    resourceServers.clear();
+
+    // Always detach before clearing
+    for (auto const &elem : groupServers) {
+      coms->removePacket(elem.second->getId());
+    }
+    groupServers.clear();
+
+    // Nothing else to do
+    dest[0] = STATUS_DISCARD_COMPLETE;
+  }
 
   /**
    * Makes a resource.
@@ -129,10 +336,60 @@ class DiscoveryPacket : public bowlerserver::Packet {
    * @return The resource and a status code.
    */
   virtual std::tuple<std::unique_ptr<Resource>, std::uint8_t>
-  makeResource(std::uint8_t resourceType,
-               std::uint8_t attachment,
-               bool isReliable,
-               const std::uint8_t *attachmentData);
+  makeResource(const std::uint8_t resourceType,
+               const std::uint8_t attachment,
+               const bool isReliable,
+               const std::uint8_t *attachmentData) {
+    if (attachment < ATTACHMENT_POINT_MINIMUM || attachment > ATTACHMENT_POINT_MAXIMUM) {
+      return std::make_tuple(nullptr, bowlerrpc::STATUS_REJECTED_UNKNOWN_ATTACHMENT);
+    }
+
+    switch (resourceType) {
+    case RESOURCE_TYPE_ANALOG_IN: {
+      switch (attachment) {
+      case ATTACHMENT_POINT_TYPE_PIN: {
+        VALIDATE_AND_RETURN(AnalogIn)
+      }
+
+        CASE_INVALID_ATTACHMENT
+      }
+    }
+
+    case RESOURCE_TYPE_DIGITAL_IN: {
+      switch (attachment) {
+      case ATTACHMENT_POINT_TYPE_PIN: {
+        VALIDATE_AND_RETURN(DigitalIn)
+      }
+
+        CASE_INVALID_ATTACHMENT
+      }
+    }
+
+    case RESOURCE_TYPE_DIGITAL_OUT: {
+      switch (attachment) {
+      case ATTACHMENT_POINT_TYPE_PIN: {
+        VALIDATE_AND_RETURN(DigitalOut)
+      }
+
+        CASE_INVALID_ATTACHMENT
+      }
+    }
+
+    case RESOURCE_TYPE_SERVO: {
+      switch (attachment) {
+      case ATTACHMENT_POINT_TYPE_PIN:
+      case ATTACHMENT_POINT_TYPE_PWM_PIN: {
+        VALIDATE_AND_RETURN(Servo)
+      }
+
+        CASE_INVALID_ATTACHMENT
+      }
+    }
+
+    // Resources that haven't already been handled are unknown
+    default: { return std::make_tuple(nullptr, STATUS_REJECTED_UNKNOWN_RESOURCE); }
+    }
+  }
 
   std::shared_ptr<bowlerserver::BowlerComs<bowlerserver::DEFAULT_PACKET_SIZE>> coms;
 
